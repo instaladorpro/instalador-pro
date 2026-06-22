@@ -109,21 +109,32 @@ export default function InstalacaoDetailPage() {
   function handleShareWhatsApp() {
     const clienteNome = inst.clientes ? (inst.clientes as Record<string, unknown>).nome : 'N/A';
     const clienteTel = inst.clientes ? (inst.clientes as Record<string, unknown>).telefone : '';
-    const custoExtra = (extraCosts || []).reduce((s: number, c: Record<string, unknown>) => s + Number(c.valor || 0), 0);
-    const valorTotal = (Number(inst.valor_total) || 0) + custoExtra;
+    const costs = extraCosts || [];
+    const custoExtra = costs.reduce((s: number, c: Record<string, unknown>) => s + Number(c.valor || 0), 0);
+    const valorBase = Number(inst.valor_total) || 0;
+    const valorFinal = valorBase + custoExtra;
     const numFotos = fotos?.length || 0;
 
-    let text = `📋 *RELATÓRIO DE INSTALAÇÃO*\n\n`;
+    let text = `🏗️ *RELATÓRIO DE INSTALAÇÃO*\n\n`;
     text += `👤 *Cliente:* ${clienteNome}\n`;
     if (clienteTel) text += `📱 *Telefone:* ${clienteTel}\n`;
-    text += `\n🏠 *Obra:* ${inst.tipo_servico}\n`;
+    text += `\n🏠 *Tipo:* ${inst.tipo_servico}\n`;
     text += `📍 *Endereço:* ${inst.endereco}\n`;
     if (inst.data_inicio) text += `📅 *Início:* ${formatDate(inst.data_inicio)}\n`;
     if (inst.data_conclusao) text += `✅ *Conclusão:* ${formatDate(inst.data_conclusao)}\n`;
-    text += `\n💰 *Valor da instalação:* ${formatCurrency(Number(inst.valor_total) || 0)}\n`;
-    if (custoExtra > 0) text += `➕ *Custos adicionais:* ${formatCurrency(custoExtra)}\n`;
-    if (custoExtra > 0) text += `💵 *Valor total:* ${formatCurrency(valorTotal)}\n`;
-    if (numFotos > 0) text += `\n📸 *Fotos:* ${numFotos} registros\n`;
+
+    text += `\n💰 *RESUMO FINANCEIRO*\n\n`;
+    text += `Valor da Instalação: ${formatCurrency(valorBase)}\n`;
+    if (costs.length > 0) {
+      text += `\nCustos Adicionais:\n`;
+      costs.forEach((c: Record<string, unknown>) => {
+        text += `• ${c.descricao} — ${formatCurrency(Number(c.valor))}\n`;
+      });
+      text += `\nTotal Custos Adicionais: ${formatCurrency(custoExtra)}\n`;
+    }
+    text += `\n*Valor Final da Instalação: ${formatCurrency(valorFinal)}*\n`;
+
+    if (numFotos > 0) text += `\n📸 Fotos anexadas: ${numFotos}\n`;
     text += `\n_Gerado pelo Instalador Pro_`;
 
     navigator.clipboard.writeText(text);
@@ -183,18 +194,46 @@ export default function InstalacaoDetailPage() {
                 )}
               </div>
             </div>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div><dt className="text-muted">Tipo</dt><dd className="font-medium text-foreground">{inst.tipo_servico}</dd></div>
-              <div><dt className="text-muted">Valor</dt><dd className="font-medium text-foreground">{formatCurrency(Number(inst.valor_total) || 0)}</dd></div>
-              <div><dt className="text-muted">Endereço</dt><dd className="text-foreground">{inst.endereco}</dd></div>
-              <div><dt className="text-muted">Cidade/UF</dt><dd className="text-foreground">{[inst.cidade, inst.estado].filter(Boolean).join('/') || '—'}</dd></div>
-              <div><dt className="text-muted">Potência</dt><dd className="text-foreground">{inst.potencia_kwp ? `${inst.potencia_kwp} kWp` : '—'}</dd></div>
-              <div><dt className="text-muted">Painéis</dt><dd className="text-foreground">{inst.numero_paineis || '—'}</dd></div>
-              <div><dt className="text-muted">Inversor</dt><dd className="text-foreground">{inst.inversor || '—'}</dd></div>
-              <div><dt className="text-muted">Data Prevista</dt><dd className="text-foreground">{formatDate(inst.data_prevista)}</dd></div>
-              <div><dt className="text-muted">Início</dt><dd className="text-foreground">{formatDate(inst.data_inicio)}</dd></div>
-              <div><dt className="text-muted">Conclusão</dt><dd className="text-foreground">{formatDate(inst.data_conclusao)}</dd></div>
-            </dl>
+            {(() => {
+              const valorBase = Number(inst.valor_total) || 0;
+              const custoExtra = (extraCosts || []).reduce((s: number, c: Record<string, unknown>) => s + Number(c.valor || 0), 0);
+              const valorFinal = valorBase + custoExtra;
+              return (
+                <>
+                  <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div><dt className="text-muted">Tipo</dt><dd className="font-medium text-foreground">{inst.tipo_servico}</dd></div>
+                    <div><dt className="text-muted">Endereço</dt><dd className="text-foreground">{inst.endereco}</dd></div>
+                    <div><dt className="text-muted">Cidade/UF</dt><dd className="text-foreground">{[inst.cidade, inst.estado].filter(Boolean).join('/') || '—'}</dd></div>
+                    <div><dt className="text-muted">Potência</dt><dd className="text-foreground">{inst.potencia_kwp ? `${inst.potencia_kwp} kWp` : '—'}</dd></div>
+                    <div><dt className="text-muted">Painéis</dt><dd className="text-foreground">{inst.numero_paineis || '—'}</dd></div>
+                    <div><dt className="text-muted">Inversor</dt><dd className="text-foreground">{inst.inversor || '—'}</dd></div>
+                    <div><dt className="text-muted">Data Prevista</dt><dd className="text-foreground">{formatDate(inst.data_prevista)}</dd></div>
+                    <div><dt className="text-muted">Início</dt><dd className="text-foreground">{formatDate(inst.data_inicio)}</dd></div>
+                    <div><dt className="text-muted">Conclusão</dt><dd className="text-foreground">{formatDate(inst.data_conclusao)}</dd></div>
+                  </dl>
+
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <h4 className="text-xs font-semibold text-secondary uppercase mb-2">Resumo Financeiro</h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted">Valor da Instalação</span>
+                        <span className="text-foreground">{formatCurrency(valorBase)}</span>
+                      </div>
+                      {custoExtra > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted">Custos Adicionais</span>
+                          <span className="text-amber-600">+ {formatCurrency(custoExtra)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-bold pt-1.5 border-t border-border">
+                        <span className="text-foreground">Valor Final</span>
+                        <span className="text-foreground">{formatCurrency(valorFinal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             {inst.localizacao_url && (
               <div className="mt-4 pt-4 border-t border-border">
                 <a href={inst.localizacao_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
