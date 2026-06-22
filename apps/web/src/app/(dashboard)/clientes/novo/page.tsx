@@ -23,10 +23,8 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const TIPOS = [
-  { value: 'residencial', label: 'Residencial' },
-  { value: 'comercial', label: 'Comercial' },
-  { value: 'industrial', label: 'Industrial' },
-  { value: 'rural', label: 'Rural' },
+  { value: 'pf', label: 'Pessoa Física' },
+  { value: 'pj', label: 'Pessoa Jurídica' },
 ];
 
 const ESTADOS = 'AC,AL,AP,AM,BA,CE,DF,ES,GO,MA,MT,MS,MG,PA,PB,PR,PE,PI,RJ,RN,RS,RO,RR,SC,SP,SE,TO'.split(',').map((s) => ({ value: s, label: s }));

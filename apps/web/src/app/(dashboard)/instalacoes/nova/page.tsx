@@ -21,6 +21,7 @@ const schema = z.object({
   inversor: z.string().optional(),
   valor_total: z.coerce.number().positive('Valor deve ser positivo'),
   data_prevista: z.string().optional(),
+  localizacao_url: z.string().url().optional().or(z.literal('')),
   observacoes: z.string().optional(),
 });
 
@@ -100,6 +101,8 @@ export default function NovaInstalacaoPage() {
           <Input label="Valor Total (R$)" type="number" step="0.01" error={errors.valor_total?.message} {...register('valor_total')} />
           <Input label="Data Prevista" type="date" {...register('data_prevista')} />
         </div>
+
+        <Input label="Localização (link Google Maps/Waze)" {...register('localizacao_url')} placeholder="https://maps.google.com/..." />
 
         <Textarea label="Observações" {...register('observacoes')} />
 

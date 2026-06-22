@@ -69,19 +69,15 @@ export async function update(id: string, input: Record<string, unknown>) {
   return data;
 }
 
-export async function updateStatus(id: string, newStatus: string, userId: string, observacao?: string) {
-  const { error: statusError } = await supabase
+export async function updateStatus(id: string, newStatus: string, _userId: string, _observacao?: string) {
+  // The trigger track_instalacao_status (SECURITY DEFINER) automatically
+  // inserts into historico_status on status change — no manual insert needed.
+  const { error } = await supabase
     .from('instalacoes')
     .update({ status: newStatus })
     .eq('id', id);
 
-  if (statusError) throw new Error(statusError.message);
-
-  const { error: histError } = await supabase
-    .from('historico_status')
-    .insert({ instalacao_id: id, status_novo: newStatus, usuario_id: userId, observacao });
-
-  if (histError) throw new Error(histError.message);
+  if (error) throw new Error(error.message);
 }
 
 export async function remove(id: string) {

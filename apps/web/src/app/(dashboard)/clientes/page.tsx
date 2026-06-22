@@ -8,17 +8,13 @@ import { PageHeader, Button, SearchInput, Badge, EmptyState, Skeleton } from '@/
 
 const TIPOS = [
   { value: '', label: 'Todos' },
-  { value: 'residencial', label: 'Residencial' },
-  { value: 'comercial', label: 'Comercial' },
-  { value: 'industrial', label: 'Industrial' },
-  { value: 'rural', label: 'Rural' },
+  { value: 'pf', label: 'Pessoa Física' },
+  { value: 'pj', label: 'Pessoa Jurídica' },
 ];
 
 const TIPO_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning'> = {
-  residencial: 'info',
-  comercial: 'success',
-  industrial: 'warning',
-  rural: 'default',
+  pf: 'info',
+  pj: 'success',
 };
 
 export default function ClientesPage() {

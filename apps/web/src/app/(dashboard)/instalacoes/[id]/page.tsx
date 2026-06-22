@@ -8,7 +8,8 @@ import { useChecklists, useToggleItem, useDeleteChecklist } from '@/hooks/use-ch
 import { useChecklistTemplates, useApplyTemplate } from '@/hooks/use-checklist-templates';
 import { useFotos, useUploadFoto, useDeleteFoto } from '@/hooks/use-fotos';
 import { useInstallationMaterials, useMaterialTemplates, useApplyMaterialTemplate, useToggleMaterialItem, useAddMaterialItem, useRemoveMaterialItem, useRemoveMaterialList } from '@/hooks/use-material-templates';
-import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select } from '@/components/ui';
+import { useExtraCosts, useCreateExtraCost, useDeleteExtraCost } from '@/hooks/use-extra-costs';
+import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select, Textarea } from '@/components/ui';
 import * as fotosService from '@/services/fotos.service';
 
 function formatCurrency(v: number) {
@@ -20,9 +21,9 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString('pt-BR');
 }
 
-const TRANSITIONS: Record<string, { label: string; next: string; variant: 'primary' | 'danger' }> = {
+const TRANSITIONS: Record<string, { label: string; next: string; variant: 'primary' | 'danger'; confirm?: boolean }> = {
   agendada: { label: 'Iniciar Instalação', next: 'em_andamento', variant: 'primary' },
-  em_andamento: { label: 'Concluir', next: 'concluida', variant: 'primary' },
+  em_andamento: { label: 'Finalizar Instalação', next: 'concluida', variant: 'primary', confirm: true },
   concluida: { label: 'Registrar Pagamento', next: 'paga', variant: 'primary' },
 };
 
@@ -54,8 +55,14 @@ export default function InstalacaoDetailPage() {
   const addMaterialItem = useAddMaterialItem();
   const removeMaterialItem = useRemoveMaterialItem();
   const removeMaterialList = useRemoveMaterialList();
+  const { data: extraCosts } = useExtraCosts(id);
+  const createExtraCost = useCreateExtraCost();
+  const deleteExtraCost = useDeleteExtraCost();
 
   const [showDelete, setShowDelete] = useState(false);
+  const [showFinalize, setShowFinalize] = useState(false);
+  const [showAddCost, setShowAddCost] = useState(false);
+  const [costForm, setCostForm] = useState({ descricao: '', valor: '', data: new Date().toISOString().split('T')[0], observacao: '' });
   const [showAddChecklist, setShowAddChecklist] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [showAddMaterial, setShowAddMaterial] = useState(false);
@@ -75,8 +82,52 @@ export default function InstalacaoDetailPage() {
 
   async function handleTransition() {
     if (!transition) return;
+    if (transition.confirm) { setShowFinalize(true); return; }
     try { await updateStatus.mutateAsync({ id, status: transition.next }); }
     catch (err) { alert(err instanceof Error ? err.message : 'Erro ao atualizar status'); }
+  }
+
+  async function handleFinalize() {
+    try {
+      await updateStatus.mutateAsync({ id, status: 'concluida' });
+      setShowFinalize(false);
+    } catch (err) { alert(err instanceof Error ? err.message : 'Erro ao finalizar'); }
+  }
+
+  async function handleAddCost() {
+    if (!costForm.descricao || !costForm.valor) return;
+    try {
+      await createExtraCost.mutateAsync({
+        instalacao_id: id, descricao: costForm.descricao,
+        valor: parseFloat(costForm.valor), data: costForm.data, observacao: costForm.observacao || undefined,
+      });
+      setShowAddCost(false);
+      setCostForm({ descricao: '', valor: '', data: new Date().toISOString().split('T')[0], observacao: '' });
+    } catch (err) { alert(err instanceof Error ? err.message : 'Erro'); }
+  }
+
+  function handleShareWhatsApp() {
+    const clienteNome = inst.clientes ? (inst.clientes as Record<string, unknown>).nome : 'N/A';
+    const clienteTel = inst.clientes ? (inst.clientes as Record<string, unknown>).telefone : '';
+    const custoExtra = (extraCosts || []).reduce((s: number, c: Record<string, unknown>) => s + Number(c.valor || 0), 0);
+    const valorTotal = (Number(inst.valor_total) || 0) + custoExtra;
+    const numFotos = fotos?.length || 0;
+
+    let text = `📋 *RELATÓRIO DE INSTALAÇÃO*\n\n`;
+    text += `👤 *Cliente:* ${clienteNome}\n`;
+    if (clienteTel) text += `📱 *Telefone:* ${clienteTel}\n`;
+    text += `\n🏠 *Obra:* ${inst.tipo_servico}\n`;
+    text += `📍 *Endereço:* ${inst.endereco}\n`;
+    if (inst.data_inicio) text += `📅 *Início:* ${formatDate(inst.data_inicio)}\n`;
+    if (inst.data_conclusao) text += `✅ *Conclusão:* ${formatDate(inst.data_conclusao)}\n`;
+    text += `\n💰 *Valor da instalação:* ${formatCurrency(Number(inst.valor_total) || 0)}\n`;
+    if (custoExtra > 0) text += `➕ *Custos adicionais:* ${formatCurrency(custoExtra)}\n`;
+    if (custoExtra > 0) text += `💵 *Valor total:* ${formatCurrency(valorTotal)}\n`;
+    if (numFotos > 0) text += `\n📸 *Fotos:* ${numFotos} registros\n`;
+    text += `\n_Gerado pelo Instalador Pro_`;
+
+    navigator.clipboard.writeText(text);
+    alert('Relatório copiado! Cole no WhatsApp.');
   }
 
   async function handleDelete() {
@@ -125,7 +176,12 @@ export default function InstalacaoDetailPage() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <StatusBadge status={inst.status} />
-              {transition && <Button size="sm" variant={transition.variant} loading={updateStatus.isPending} onClick={handleTransition}>{transition.label}</Button>}
+              <div className="flex gap-2">
+                {transition && <Button size="sm" variant={transition.variant} loading={updateStatus.isPending} onClick={handleTransition}>{transition.label}</Button>}
+                {(inst.status === 'concluida' || inst.status === 'paga') && (
+                  <Button size="sm" variant="outline" onClick={handleShareWhatsApp}>📋 Compartilhar</Button>
+                )}
+              </div>
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div><dt className="text-muted">Tipo</dt><dd className="font-medium text-foreground">{inst.tipo_servico}</dd></div>
@@ -136,8 +192,50 @@ export default function InstalacaoDetailPage() {
               <div><dt className="text-muted">Painéis</dt><dd className="text-foreground">{inst.numero_paineis || '—'}</dd></div>
               <div><dt className="text-muted">Inversor</dt><dd className="text-foreground">{inst.inversor || '—'}</dd></div>
               <div><dt className="text-muted">Data Prevista</dt><dd className="text-foreground">{formatDate(inst.data_prevista)}</dd></div>
+              <div><dt className="text-muted">Início</dt><dd className="text-foreground">{formatDate(inst.data_inicio)}</dd></div>
+              <div><dt className="text-muted">Conclusão</dt><dd className="text-foreground">{formatDate(inst.data_conclusao)}</dd></div>
             </dl>
+            {inst.localizacao_url && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <a href={inst.localizacao_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
+                  📍 Abrir Localização
+                </a>
+              </div>
+            )}
             {inst.observacoes && <div className="mt-4 pt-4 border-t border-border"><p className="text-xs text-muted mb-1">Observações</p><p className="text-sm text-foreground">{inst.observacoes}</p></div>}
+          </Card>
+
+          {/* Custos Adicionais */}
+          <Card header={{ title: 'Custos Adicionais', action: <Button size="sm" variant="outline" onClick={() => setShowAddCost(true)}>Adicionar Custo</Button> }}>
+            {(() => {
+              const costs = extraCosts || [];
+              const total = costs.reduce((s: number, c: Record<string, unknown>) => s + Number(c.valor || 0), 0);
+              return costs.length === 0 ? (
+                <p className="text-sm text-muted text-center py-4">Nenhum custo adicional registrado</p>
+              ) : (
+                <>
+                  <div className="divide-y divide-border">
+                    {costs.map((c: Record<string, unknown>) => (
+                      <div key={c.id as string} className="flex items-center justify-between py-2 group">
+                        <div>
+                          <p className="text-sm text-foreground">{c.descricao as string}</p>
+                          <p className="text-xs text-muted">{formatDate(c.data as string)}{c.observacao ? ` · ${c.observacao}` : ''}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">{formatCurrency(Number(c.valor))}</span>
+                          <button onClick={() => { if (confirm('Excluir este custo?')) deleteExtraCost.mutate(c.id as string); }}
+                            className="text-muted hover:text-danger text-xs opacity-0 group-hover:opacity-100">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border flex justify-between">
+                    <span className="text-sm font-medium text-secondary">Total custos adicionais</span>
+                    <span className="text-sm font-bold text-foreground">{formatCurrency(total)}</span>
+                  </div>
+                </>
+              );
+            })()}
           </Card>
 
           {/* Checklists */}
@@ -398,6 +496,27 @@ export default function InstalacaoDetailPage() {
             <p className="text-xs text-muted mt-2">Uma cópia independente será criada para esta instalação.</p>
           </>
         )}
+      </Modal>
+
+      {/* Finalize Confirmation Modal */}
+      <Modal open={showFinalize} onClose={() => setShowFinalize(false)} title="Finalizar Instalação?" size="sm" footer={
+        <><Button variant="outline" onClick={() => setShowFinalize(false)}>Cancelar</Button><Button loading={updateStatus.isPending} onClick={handleFinalize}>Finalizar</Button></>
+      }>
+        <p className="text-sm text-secondary">Tem certeza que deseja finalizar esta instalação? A data de conclusão será registrada automaticamente.</p>
+      </Modal>
+
+      {/* Add Extra Cost Modal */}
+      <Modal open={showAddCost} onClose={() => setShowAddCost(false)} title="Adicionar Custo Adicional" size="sm" footer={
+        <><Button variant="outline" onClick={() => setShowAddCost(false)}>Cancelar</Button><Button loading={createExtraCost.isPending} onClick={handleAddCost} disabled={!costForm.descricao || !costForm.valor}>Adicionar</Button></>
+      }>
+        <div className="space-y-4">
+          <Input label="Descrição" value={costForm.descricao} onChange={(e) => setCostForm({ ...costForm, descricao: e.target.value })} placeholder="Ex: Cabo adicional" />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Valor (R$)" type="number" step="0.01" value={costForm.valor} onChange={(e) => setCostForm({ ...costForm, valor: e.target.value })} />
+            <Input label="Data" type="date" value={costForm.data} onChange={(e) => setCostForm({ ...costForm, data: e.target.value })} />
+          </div>
+          <Textarea label="Observação (opcional)" value={costForm.observacao} onChange={(e) => setCostForm({ ...costForm, observacao: e.target.value })} />
+        </div>
       </Modal>
 
       {/* Material Template Selection Modal */}

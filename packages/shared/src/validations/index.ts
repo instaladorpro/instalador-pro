@@ -46,8 +46,8 @@ export const clienteSchema = z.object({
   cidade: z.string().max(100).optional(),
   estado: z.string().length(2, 'Use a sigla do estado (ex: MG)').optional().or(z.literal('')),
   cep: z.string().max(10).optional(),
-  tipo: z.enum(['residencial', 'comercial', 'industrial', 'rural'], {
-    errorMap: () => ({ message: 'Selecione o tipo de cliente' }),
+  tipo: z.enum(['pf', 'pj'], {
+    errorMap: () => ({ message: 'Selecione Pessoa Física ou Jurídica' }),
   }),
 })
 

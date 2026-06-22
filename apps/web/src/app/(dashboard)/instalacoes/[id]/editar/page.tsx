@@ -20,6 +20,7 @@ const schema = z.object({
   inversor: z.string().optional(),
   valor_total: z.coerce.number().positive(),
   data_prevista: z.string().optional(),
+  localizacao_url: z.string().url().optional().or(z.literal('')),
   observacoes: z.string().optional(),
 });
 
@@ -58,6 +59,7 @@ export default function EditarInstalacaoPage() {
         inversor: inst.inversor || '',
         valor_total: Number(inst.valor_total) || 0,
         data_prevista: inst.data_prevista || '',
+        localizacao_url: inst.localizacao_url || '',
         observacoes: inst.observacoes || '',
       });
     }
@@ -98,6 +100,7 @@ export default function EditarInstalacaoPage() {
           <Input label="Valor Total (R$)" type="number" step="0.01" error={errors.valor_total?.message} {...register('valor_total')} />
           <Input label="Data Prevista" type="date" {...register('data_prevista')} />
         </div>
+        <Input label="Localização (link Google Maps/Waze)" {...register('localizacao_url')} placeholder="https://maps.google.com/..." />
         <Textarea label="Observações" {...register('observacoes')} />
         <div className="flex gap-3 pt-2">
           <Button type="submit" loading={isPending}>Salvar</Button>
