@@ -12,32 +12,19 @@
     --color-info: #2563EB;
     --color-surface: #F8F7F4;
     --color-border: #E5E2DB;
-    --color-foreground: #1A1A1A;
-    --color-secondary: #6B7280;
-    --color-muted: #9CA3AF;
   }
 
   body {
-    @apply bg-white text-foreground antialiased;
+    @apply bg-white text-gray-900 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   * {
-    @apply border-border;
+    border-color: #E5E2DB;
   }
 
   ::selection {
     background: #2D8C3C20;
-  }
-
-  input, select, textarea {
-    @apply outline-none;
-  }
-}
-
-@layer components {
-  .animate-in {
-    animation: fadeIn 0.2s ease-out;
   }
 }
 
