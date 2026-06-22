@@ -1,3 +1,10 @@
+# Turbo
+.turbo/
+*.tsbuildinfo
+
+# Next.js
+.next/
+
 # Expo / React Native
 .expo/
 dist/

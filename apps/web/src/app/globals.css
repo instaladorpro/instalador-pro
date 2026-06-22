@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #534AB7;
+  --color-success: #1D9E75;
+  --color-warning: #BA7517;
+  --color-danger: #A32D2D;
+  --color-info: #185FA5;
+  --color-surface: #F1EFE8;
+  --color-border: #D3D1C7;
+}
+
+body {
+  @apply bg-white text-gray-900 antialiased;
+}
