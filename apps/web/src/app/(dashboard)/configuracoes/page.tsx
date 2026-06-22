@@ -114,6 +114,15 @@ export default function ConfiguracoesPage() {
           </div>
         </Card>
 
+        <Card header={{ title: 'Modelos de Lista de Materiais' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-secondary">Crie listas de materiais reutilizáveis para suas instalações.</p>
+            </div>
+            <Link href="/configuracoes/materiais"><Button variant="outline" size="sm">Gerenciar Modelos</Button></Link>
+          </div>
+        </Card>
+
         <Card header={{ title: 'Plano Atual' }}>
           <div className="flex items-center justify-between">
             <div>

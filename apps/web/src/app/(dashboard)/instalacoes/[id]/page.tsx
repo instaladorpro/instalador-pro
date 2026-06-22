@@ -7,6 +7,7 @@ import { useInstalacao, useUpdateStatus, useDeleteInstalacao, useHistoricoStatus
 import { useChecklists, useToggleItem, useDeleteChecklist } from '@/hooks/use-checklists';
 import { useChecklistTemplates, useApplyTemplate } from '@/hooks/use-checklist-templates';
 import { useFotos, useUploadFoto, useDeleteFoto } from '@/hooks/use-fotos';
+import { useInstallationMaterials, useMaterialTemplates, useApplyMaterialTemplate, useToggleMaterialItem, useAddMaterialItem, useRemoveMaterialItem, useRemoveMaterialList } from '@/hooks/use-material-templates';
 import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select } from '@/components/ui';
 import * as fotosService from '@/services/fotos.service';
 
@@ -46,10 +47,23 @@ export default function InstalacaoDetailPage() {
   const applyTemplate = useApplyTemplate();
   const uploadFoto = useUploadFoto();
   const deleteFoto = useDeleteFoto();
+  const { data: materialLists } = useInstallationMaterials(id);
+  const { data: materialTemplates } = useMaterialTemplates();
+  const applyMaterialTemplate = useApplyMaterialTemplate();
+  const toggleMaterialItem = useToggleMaterialItem();
+  const addMaterialItem = useAddMaterialItem();
+  const removeMaterialItem = useRemoveMaterialItem();
+  const removeMaterialList = useRemoveMaterialList();
 
   const [showDelete, setShowDelete] = useState(false);
   const [showAddChecklist, setShowAddChecklist] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [showAddMaterial, setShowAddMaterial] = useState(false);
+  const [selectedMaterialTemplateId, setSelectedMaterialTemplateId] = useState('');
+  const [materialFilter, setMaterialFilter] = useState<'todos' | 'conferidos' | 'pendentes'>('todos');
+  const [newItemListId, setNewItemListId] = useState<string | null>(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
   const [fotoCategoria, setFotoCategoria] = useState('durante');
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
@@ -201,6 +215,101 @@ export default function InstalacaoDetailPage() {
               </div>
             )}
           </Card>
+
+          {/* Lista de Materiais */}
+          <Card header={{
+            title: 'Lista de Materiais',
+            action: <Button size="sm" variant="outline" onClick={() => setShowAddMaterial(true)}>Adicionar Lista</Button>,
+          }}>
+            {!materialLists?.length ? (
+              <p className="text-sm text-muted text-center py-4">Nenhuma lista de materiais</p>
+            ) : (
+              <div className="space-y-6">
+                {materialLists.map((ml: Record<string, unknown>) => {
+                  const items = (ml.installation_material_items as Record<string, unknown>[]) || [];
+                  const conferidos = items.filter((i) => i.conferido).length;
+                  const filteredItems = items.filter((i) => {
+                    if (materialFilter === 'conferidos') return i.conferido;
+                    if (materialFilter === 'pendentes') return !i.conferido;
+                    return true;
+                  });
+
+                  function handleExportWhatsApp() {
+                    const clienteNome = inst.clientes ? (inst.clientes as Record<string, unknown>).nome : 'N/A';
+                    let text = `📦 LISTA DE MATERIAIS\n\nObra: ${inst.tipo_servico} - ${inst.endereco}\nCliente: ${clienteNome}\n\n`;
+                    items.forEach((i) => { text += `• ${i.quantidade}${i.unidade !== 'un' ? i.unidade : 'x'} ${i.nome_material}\n`; });
+                    text += `\nTotal de itens: ${items.length}\nConferidos: ${conferidos}/${items.length}\n\nGerado pelo Instalador Pro`;
+                    navigator.clipboard.writeText(text);
+                    alert('Lista copiada! Cole no WhatsApp.');
+                  }
+
+                  return (
+                    <div key={ml.id as string}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-foreground">{ml.nome as string}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted">{conferidos}/{items.length} conferidos</span>
+                          <button onClick={handleExportWhatsApp} className="text-xs text-primary hover:underline" title="Copiar para WhatsApp">📋</button>
+                          <button onClick={() => { if (confirm('Excluir esta lista?')) removeMaterialList.mutate(ml.id as string); }}
+                            className="text-muted hover:text-danger text-sm" title="Excluir lista">×</button>
+                        </div>
+                      </div>
+
+                      <div className="h-1.5 bg-surface rounded-full mb-2 overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${items.length ? (conferidos / items.length) * 100 : 0}%` }} />
+                      </div>
+
+                      <div className="flex gap-1.5 mb-2">
+                        {(['todos', 'conferidos', 'pendentes'] as const).map((f) => (
+                          <button key={f} onClick={() => setMaterialFilter(f)}
+                            className={`text-[10px] px-2 py-0.5 rounded-full ${materialFilter === f ? 'bg-primary text-white' : 'bg-surface text-muted'}`}>
+                            {f === 'todos' ? 'Todos' : f === 'conferidos' ? 'Conferidos' : 'Pendentes'}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-1">
+                        {filteredItems.map((item) => (
+                          <div key={item.id as string} className="flex items-center gap-2 py-1 group">
+                            <input type="checkbox" checked={!!item.conferido}
+                              onChange={() => toggleMaterialItem.mutate({ itemId: item.id as string, conferido: !item.conferido })}
+                              className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
+                            <span className={`text-sm flex-1 ${item.conferido ? 'line-through text-muted' : 'text-foreground'}`}>
+                              <strong>{item.quantidade as number}{(item.unidade as string) !== 'un' ? (item.unidade as string) : 'x'}</strong>{' '}
+                              {item.nome_material as string}
+                            </span>
+                            <button onClick={() => removeMaterialItem.mutate(item.id as string)}
+                              className="text-muted hover:text-danger text-xs opacity-0 group-hover:opacity-100">×</button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add item inline */}
+                      {newItemListId === (ml.id as string) ? (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+                          <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)}
+                            className="flex-1 h-8 px-2 text-sm rounded border border-border bg-white focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Nome do material" />
+                          <input type="number" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)}
+                            className="w-16 h-8 px-2 text-sm rounded border border-border bg-white text-center" />
+                          <Button size="sm" onClick={async () => {
+                            if (!newItemName.trim()) return;
+                            await addMaterialItem.mutateAsync({ listId: ml.id as string, item: { nome_material: newItemName, quantidade: parseFloat(newItemQty) || 1, ordem: items.length + 1 } });
+                            setNewItemName(''); setNewItemQty('1'); setNewItemListId(null);
+                          }}>+</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setNewItemListId(null)}>×</Button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setNewItemListId(ml.id as string)}
+                          className="text-xs text-primary hover:underline mt-2 pt-2 border-t border-border block w-full text-left">
+                          + Adicionar material
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
         </div>
 
         {/* Sidebar */}
@@ -280,6 +389,55 @@ export default function InstalacaoDetailPage() {
                         <span className="text-muted">○</span>
                         {item.descricao as string}
                         {item.obrigatorio && <span className="text-danger">*</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+            <p className="text-xs text-muted mt-2">Uma cópia independente será criada para esta instalação.</p>
+          </>
+        )}
+      </Modal>
+
+      {/* Material Template Selection Modal */}
+      <Modal open={showAddMaterial} onClose={() => setShowAddMaterial(false)} title="Adicionar Lista de Materiais" size="sm" footer={
+        <><Button variant="outline" onClick={() => setShowAddMaterial(false)}>Cancelar</Button>
+        <Button loading={applyMaterialTemplate.isPending} onClick={async () => {
+          if (!selectedMaterialTemplateId) return;
+          await applyMaterialTemplate.mutateAsync({ templateId: selectedMaterialTemplateId, instalacaoId: id });
+          setShowAddMaterial(false); setSelectedMaterialTemplateId('');
+        }} disabled={!selectedMaterialTemplateId}>Aplicar</Button></>
+      }>
+        {!materialTemplates?.length ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted mb-2">Nenhum modelo de materiais criado.</p>
+            <a href="/configuracoes/materiais" className="text-sm text-primary hover:underline">Criar modelo em Configurações →</a>
+          </div>
+        ) : (
+          <>
+            <Select
+              label="Modelo de Lista"
+              options={materialTemplates.map((t: Record<string, unknown>) => ({
+                value: t.id as string,
+                label: `${t.nome} (${((t.material_list_template_items as unknown[]) || []).length} itens)`,
+              }))}
+              placeholder="Selecione um modelo..."
+              value={selectedMaterialTemplateId}
+              onChange={(e) => setSelectedMaterialTemplateId(e.target.value)}
+            />
+            {selectedMaterialTemplateId && (() => {
+              const sel = materialTemplates.find((t: Record<string, unknown>) => t.id === selectedMaterialTemplateId);
+              if (!sel) return null;
+              const items = (sel.material_list_template_items as Record<string, unknown>[]) || [];
+              return (
+                <div className="mt-3 p-3 bg-surface rounded-lg max-h-48 overflow-y-auto">
+                  <p className="text-xs font-medium text-secondary mb-2">Materiais:</p>
+                  <ul className="space-y-1">
+                    {items.map((item, i) => (
+                      <li key={i} className="text-xs text-foreground flex justify-between">
+                        <span>{item.nome_material as string}</span>
+                        <span className="text-muted">{item.quantidade as number} {item.unidade as string}</span>
                       </li>
                     ))}
                   </ul>
