@@ -2,45 +2,59 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/stores/auth-store';
+
+const NAV_ICONS: Record<string, string> = {
+  '/': '📊',
+  '/instalacoes': '⚡',
+  '/clientes': '👥',
+  '/equipes': '👷',
+  '/financeiro': '💰',
+  '/estoque': '📦',
+  '/documentos': '📄',
+};
 
 const navItems = [
-  { href: '/dashboard', label: 'Inicio' },
-  { href: '/dashboard/instalacoes', label: 'Instalacoes' },
-  { href: '/dashboard/clientes', label: 'Clientes' },
-  { href: '/dashboard/equipes', label: 'Equipes' },
-  { href: '/dashboard/financeiro', label: 'Financeiro' },
-  { href: '/dashboard/estoque', label: 'Estoque' },
-  { href: '/dashboard/documentos', label: 'Documentos' },
+  { href: '/', label: 'Início' },
+  { href: '/instalacoes', label: 'Instalações' },
+  { href: '/clientes', label: 'Clientes' },
+  { href: '/equipes', label: 'Equipes' },
+  { href: '/financeiro', label: 'Financeiro' },
+  { href: '/estoque', label: 'Estoque' },
+  { href: '/documentos', label: 'Documentos' },
 ];
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const orgName = useAuthStore((s) => s.currentOrg?.nome);
+
+  function isActive(href: string) {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  }
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-64 flex-col border-r border-border bg-white">
+      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-white">
         <div className="border-b border-border px-6 py-5">
           <h2 className="text-lg font-bold text-primary">Instalador Pro</h2>
-          <p className="mt-0.5 text-xs text-gray-500">Minha Empresa Solar</p>
+          <p className="mt-0.5 text-xs text-secondary truncate">{orgName || 'Minha Empresa'}</p>
         </div>
         <nav className="flex-1 px-3 py-4">
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-0.5">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const active = isActive(item.href);
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 text-primary'
-                        : 'text-gray-600 hover:bg-surface hover:text-gray-900'
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-secondary hover:bg-surface hover:text-foreground'
                     }`}
                   >
+                    <span className="text-base">{NAV_ICONS[item.href]}</span>
                     {item.label}
                   </Link>
                 </li>
@@ -48,8 +62,25 @@ export default function DashboardLayout({
             })}
           </ul>
         </nav>
+        <div className="border-t border-border px-4 py-3">
+          <Link href="/perfil" className="text-xs text-secondary hover:text-foreground transition-colors">Meu Perfil</Link>
+        </div>
       </aside>
-      <main className="flex-1 bg-surface p-8">{children}</main>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border z-30 px-2 py-1 flex justify-around">
+        {navItems.slice(0, 5).map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link key={item.href} href={item.href} className={`flex flex-col items-center py-1.5 px-2 text-[10px] ${active ? 'text-primary' : 'text-muted'}`}>
+              <span className="text-lg">{NAV_ICONS[item.href]}</span>
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <main className="flex-1 bg-surface p-4 md:p-8 pb-20 md:pb-8">{children}</main>
     </div>
   );
 }
