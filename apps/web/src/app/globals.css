@@ -12,11 +12,16 @@
     --color-info: #2563EB;
     --color-surface: #F8F7F4;
     --color-border: #E5E2DB;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body {
     @apply bg-white text-gray-900 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: none;
   }
 
   * {
@@ -26,11 +31,41 @@
   ::selection {
     background: #2D8C3C20;
   }
+
+  /* Prevent iOS zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  @media (min-width: 1024px) {
+    input, select, textarea {
+      font-size: 14px !important;
+    }
+  }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #E5E2DB transparent;
+  }
+
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Standalone PWA adjustments */
+@media all and (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
