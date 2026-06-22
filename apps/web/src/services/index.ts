@@ -2,3 +2,8 @@ export * as dashboardService from './dashboard.service';
 export * as instalacoesService from './instalacoes.service';
 export * as clientesService from './clientes.service';
 export * as financeiroService from './financeiro.service';
+export * as equipesService from './equipes.service';
+export * as checklistsService from './checklists.service';
+export * as fotosService from './fotos.service';
+export * as estoqueService from './estoque.service';
+export * as documentosService from './documentos.service';
