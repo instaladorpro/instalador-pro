@@ -12,6 +12,8 @@ const NAV_ICONS: Record<string, string> = {
   '/financeiro': '💰',
   '/estoque': '📦',
   '/documentos': '📄',
+  '/relatorios': '📈',
+  '/configuracoes': '⚙️',
 };
 
 const navItems = [
@@ -22,6 +24,8 @@ const navItems = [
   { href: '/financeiro', label: 'Financeiro' },
   { href: '/estoque', label: 'Estoque' },
   { href: '/documentos', label: 'Documentos' },
+  { href: '/relatorios', label: 'Relatórios' },
+  { href: '/configuracoes', label: 'Configurações' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useInstalacao, useUpdateStatus, useDeleteInstalacao, useHistoricoStatus } from '@/hooks/use-instalacoes';
-import { PageHeader, Button, Card, StatusBadge, Modal, Loading } from '@/components/ui';
+import { useChecklists, useCreateChecklist, useToggleItem } from '@/hooks/use-checklists';
+import { useFotos, useUploadFoto, useDeleteFoto } from '@/hooks/use-fotos';
+import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select } from '@/components/ui';
+import * as fotosService from '@/services/fotos.service';
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -21,14 +24,32 @@ const TRANSITIONS: Record<string, { label: string; next: string; variant: 'prima
   concluida: { label: 'Registrar Pagamento', next: 'paga', variant: 'primary' },
 };
 
+const CATEGORIAS_FOTO = [
+  { value: 'antes', label: 'Antes' },
+  { value: 'durante', label: 'Durante' },
+  { value: 'depois', label: 'Depois' },
+];
+
 export default function InstalacaoDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: inst, isLoading } = useInstalacao(id);
   const { data: historico } = useHistoricoStatus(id);
+  const { data: checklists } = useChecklists(id);
+  const { data: fotos } = useFotos(id);
   const updateStatus = useUpdateStatus();
   const deleteInstalacao = useDeleteInstalacao();
+  const toggleItem = useToggleItem();
+  const createChecklist = useCreateChecklist();
+  const uploadFoto = useUploadFoto();
+  const deleteFoto = useDeleteFoto();
+
   const [showDelete, setShowDelete] = useState(false);
+  const [showAddChecklist, setShowAddChecklist] = useState(false);
+  const [checklistName, setChecklistName] = useState('');
+  const [fotoCategoria, setFotoCategoria] = useState('durante');
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return <Loading message="Carregando instalação..." />;
   if (!inst) return <p className="text-center text-muted py-8">Instalação não encontrada</p>;
@@ -37,49 +58,71 @@ export default function InstalacaoDetailPage() {
 
   async function handleTransition() {
     if (!transition) return;
-    try {
-      await updateStatus.mutateAsync({ id, status: transition.next });
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao atualizar status');
-    }
+    try { await updateStatus.mutateAsync({ id, status: transition.next }); }
+    catch (err) { alert(err instanceof Error ? err.message : 'Erro ao atualizar status'); }
   }
 
   async function handleDelete() {
+    try { await deleteInstalacao.mutateAsync(id); router.push('/instalacoes'); }
+    catch (err) { alert(err instanceof Error ? err.message : 'Erro ao excluir'); }
+  }
+
+  async function handleCreateChecklist() {
+    if (!checklistName.trim()) return;
     try {
-      await deleteInstalacao.mutateAsync(id);
-      router.push('/instalacoes');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao excluir');
-    }
+      await createChecklist.mutateAsync({
+        instalacaoId: id, nome: checklistName,
+        items: [
+          { descricao: 'Verificar local de instalação', obrigatorio: true },
+          { descricao: 'Conferir equipamentos', obrigatorio: true },
+          { descricao: 'Instalar estrutura', obrigatorio: true },
+          { descricao: 'Instalar painéis', obrigatorio: true },
+          { descricao: 'Instalar inversor', obrigatorio: true },
+          { descricao: 'Conexão elétrica', obrigatorio: true },
+          { descricao: 'Teste de funcionamento', obrigatorio: true },
+          { descricao: 'Limpeza do local', obrigatorio: false },
+          { descricao: 'Fotos finais', obrigatorio: false },
+        ],
+      });
+      setShowAddChecklist(false); setChecklistName('');
+    } catch (err) { alert(err instanceof Error ? err.message : 'Erro'); }
+  }
+
+  async function handleUploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try { await uploadFoto.mutateAsync({ instalacaoId: id, file, categoria: fotoCategoria }); }
+    catch (err) { alert(err instanceof Error ? err.message : 'Erro ao enviar foto'); }
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  async function loadPhotoUrl(path: string) {
+    if (photoUrls[path]) return;
+    try {
+      const url = await fotosService.getSignedUrl(path);
+      setPhotoUrls((prev) => ({ ...prev, [path]: url }));
+    } catch {}
   }
 
   return (
     <div>
-      <PageHeader
-        title={inst.tipo_servico}
-        subtitle={inst.endereco}
-        actions={
-          <div className="flex gap-2">
-            <Link href={`/instalacoes/${id}/editar`}><Button variant="outline" size="sm">Editar</Button></Link>
-            {(inst.status === 'agendada' || inst.status === 'em_andamento') && (
-              <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>Excluir</Button>
-            )}
-          </div>
-        }
-      />
+      <PageHeader title={inst.tipo_servico} subtitle={inst.endereco} actions={
+        <div className="flex gap-2">
+          <Link href={`/instalacoes/${id}/editar`}><Button variant="outline" size="sm">Editar</Button></Link>
+          {(inst.status === 'agendada' || inst.status === 'em_andamento') && (
+            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>Excluir</Button>
+          )}
+        </div>
+      } />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* Info */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <StatusBadge status={inst.status} />
-              {transition && (
-                <Button size="sm" variant={transition.variant} loading={updateStatus.isPending} onClick={handleTransition}>
-                  {transition.label}
-                </Button>
-              )}
+              {transition && <Button size="sm" variant={transition.variant} loading={updateStatus.isPending} onClick={handleTransition}>{transition.label}</Button>}
             </div>
-
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div><dt className="text-muted">Tipo</dt><dd className="font-medium text-foreground">{inst.tipo_servico}</dd></div>
               <div><dt className="text-muted">Valor</dt><dd className="font-medium text-foreground">{formatCurrency(Number(inst.valor_total) || 0)}</dd></div>
@@ -89,30 +132,92 @@ export default function InstalacaoDetailPage() {
               <div><dt className="text-muted">Painéis</dt><dd className="text-foreground">{inst.numero_paineis || '—'}</dd></div>
               <div><dt className="text-muted">Inversor</dt><dd className="text-foreground">{inst.inversor || '—'}</dd></div>
               <div><dt className="text-muted">Data Prevista</dt><dd className="text-foreground">{formatDate(inst.data_prevista)}</dd></div>
-              <div><dt className="text-muted">Início</dt><dd className="text-foreground">{formatDate(inst.data_inicio)}</dd></div>
-              <div><dt className="text-muted">Conclusão</dt><dd className="text-foreground">{formatDate(inst.data_conclusao)}</dd></div>
             </dl>
+            {inst.observacoes && <div className="mt-4 pt-4 border-t border-border"><p className="text-xs text-muted mb-1">Observações</p><p className="text-sm text-foreground">{inst.observacoes}</p></div>}
+          </Card>
 
-            {inst.observacoes && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs text-muted mb-1">Observações</p>
-                <p className="text-sm text-foreground">{inst.observacoes}</p>
+          {/* Checklists */}
+          <Card header={{ title: 'Checklists', action: <Button size="sm" variant="outline" onClick={() => setShowAddChecklist(true)}>Novo Checklist</Button> }}>
+            {!checklists?.length ? (
+              <p className="text-sm text-muted text-center py-4">Nenhum checklist criado</p>
+            ) : (
+              <div className="space-y-4">
+                {checklists.map((cl: Record<string, unknown>) => {
+                  const items = (cl.checklist_items as Record<string, unknown>[]) || [];
+                  const done = items.filter((i) => i.concluido).length;
+                  return (
+                    <div key={cl.id as string}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-foreground">{cl.nome as string}</h4>
+                        <span className="text-xs text-muted">{done}/{items.length}</span>
+                      </div>
+                      <div className="h-1.5 bg-surface rounded-full mb-2 overflow-hidden">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${items.length ? (done / items.length) * 100 : 0}%` }} />
+                      </div>
+                      <div className="space-y-1">
+                        {items.map((item) => (
+                          <label key={item.id as string} className="flex items-center gap-2 py-1 cursor-pointer group">
+                            <input type="checkbox" checked={!!item.concluido} onChange={() => toggleItem.mutate({ itemId: item.id as string, concluido: !item.concluido })}
+                              className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
+                            <span className={`text-sm ${item.concluido ? 'line-through text-muted' : 'text-foreground'}`}>
+                              {item.descricao as string}
+                              {item.obrigatorio && <span className="text-danger text-xs ml-1">*</span>}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Card>
 
+          {/* Fotos */}
+          <Card header={{ title: 'Fotos' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <Select options={CATEGORIAS_FOTO} value={fotoCategoria} onChange={(e) => setFotoCategoria(e.target.value)} />
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleUploadFoto} className="hidden" />
+              <Button size="sm" variant="outline" loading={uploadFoto.isPending} onClick={() => fileRef.current?.click()}>Enviar Foto</Button>
+            </div>
+
+            {!fotos?.length ? (
+              <p className="text-sm text-muted text-center py-4">Nenhuma foto enviada</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {fotos.map((f: Record<string, unknown>) => {
+                  const path = f.storage_path as string;
+                  if (!photoUrls[path]) loadPhotoUrl(path);
+                  return (
+                    <div key={f.id as string} className="relative group">
+                      {photoUrls[path] ? (
+                        <img src={photoUrls[path]} alt={f.descricao as string || ''} className="w-full h-32 object-cover rounded-lg" />
+                      ) : (
+                        <div className="w-full h-32 bg-surface rounded-lg animate-pulse" />
+                      )}
+                      <span className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">{f.categoria as string}</span>
+                      <button onClick={() => deleteFoto.mutate({ id: f.id as string, storagePath: path })}
+                        className="absolute top-1 right-1 bg-black/60 text-white w-5 h-5 rounded flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
           {inst.clientes && (
             <Card header={{ title: 'Cliente' }}>
-              <dl className="grid grid-cols-2 gap-3 text-sm">
+              <dl className="space-y-2 text-sm">
                 <div><dt className="text-muted">Nome</dt><dd className="font-medium text-foreground">{(inst.clientes as Record<string, unknown>).nome as string}</dd></div>
                 <div><dt className="text-muted">Telefone</dt><dd className="text-foreground">{((inst.clientes as Record<string, unknown>).telefone as string) || '—'}</dd></div>
                 <div><dt className="text-muted">Email</dt><dd className="text-foreground">{((inst.clientes as Record<string, unknown>).email as string) || '—'}</dd></div>
               </dl>
             </Card>
           )}
-        </div>
 
-        <div>
           <Card header={{ title: 'Histórico de Status' }}>
             {!historico?.length ? (
               <p className="text-sm text-muted text-center py-4">Sem histórico</p>
@@ -141,13 +246,18 @@ export default function InstalacaoDetailPage() {
         </div>
       </div>
 
-      <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Excluir instalação?" description="Esta ação não pode ser desfeita." footer={
-        <>
-          <Button variant="outline" onClick={() => setShowDelete(false)}>Cancelar</Button>
-          <Button variant="danger" loading={deleteInstalacao.isPending} onClick={handleDelete}>Excluir</Button>
-        </>
+      {/* Modals */}
+      <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Excluir instalação?" footer={
+        <><Button variant="outline" onClick={() => setShowDelete(false)}>Cancelar</Button><Button variant="danger" loading={deleteInstalacao.isPending} onClick={handleDelete}>Excluir</Button></>
       }>
-        <p className="text-sm text-secondary">A instalação <strong>{inst.tipo_servico}</strong> em <strong>{inst.endereco}</strong> será excluída permanentemente.</p>
+        <p className="text-sm text-secondary">A instalação <strong>{inst.tipo_servico}</strong> será excluída permanentemente.</p>
+      </Modal>
+
+      <Modal open={showAddChecklist} onClose={() => setShowAddChecklist(false)} title="Novo Checklist" size="sm" footer={
+        <><Button variant="outline" onClick={() => setShowAddChecklist(false)}>Cancelar</Button><Button loading={createChecklist.isPending} onClick={handleCreateChecklist}>Criar</Button></>
+      }>
+        <Input label="Nome do checklist" value={checklistName} onChange={(e) => setChecklistName(e.target.value)} placeholder="Ex: Checklist de instalação" />
+        <p className="text-xs text-muted mt-2">Será criado com 9 itens padrão para instalação solar. Você pode personalizar depois.</p>
       </Modal>
     </div>
   );
