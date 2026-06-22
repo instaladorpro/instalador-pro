@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>InstaladorPro — Protótipo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #534AB7;
+    --primary-light: #EEEDFE;
+    --success: #1D9E75;
+    --success-light: #E1F5EE;
+    --warning: #BA7517;
+    --warning-light: #FAEEDA;
+    --danger: #A32D2D;
+    --danger-light: #FCEBEB;
+    --info: #185FA5;
+    --info-light: #E6F1FB;
+    --neutral: #888780;
+    --neutral-light: #F1EFE8;
+    --bg: #FFFFFF;
+    --surface: #F1EFE8;
+    --border: #D3D1C7;
+    --text-primary: #2C2C2A;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #888780;
+  }
+
+  body {
+    background: #E8E6E0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 20px;
+  }
+
+  /* Device frame */
+  .device {
+    width: 390px;
+    height: 844px;
+    background: #1a1a1a;
+    border-radius: 54px;
+    padding: 12px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4), inset 0 0 0 2px #333;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .device-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 50px;
+    background: var(--bg);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icon { width: 18px; height: 12px; background: var(--text-primary); border-radius: 2px; }
+  .status-icon.signal { width: 16px; background: none; border-bottom: 10px solid var(--text-primary); border-left: 4px solid transparent; border-right: 4px solid transparent; height: 0; border-radius: 0; }
+
+  /* Notch */
+  .notch {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 20;
+  }
+
+  /* Screen content area */
+  .screen-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Screens */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg);
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-back {
+    color: var(--primary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .header-title { font-size: 18px; font-weight: 700; color: var(--text-primary); flex: 1; }
+  .header-action { color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* Scroll area */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Tab bar */
+  .tab-bar {
+    height: 82px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 8px;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.15s;
+  }
+  .tab-item:active { opacity: 0.7; }
+  .tab-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-icon svg { width: 20px; height: 20px; }
+  .tab-label { font-size: 10px; font-weight: 500; color: var(--text-tertiary); }
+  .tab-item.active .tab-label { color: var(--primary); }
+  .tab-item.active .tab-icon { background: var(--primary-light); }
+  .tab-item.active .tab-icon svg { color: var(--primary); }
+
+  /* Cards */
+  .card {
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+
+  /* Metrics */
+  .metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .metric-card {
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 14px;
+  }
+  .metric-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 700; }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Button */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 13px 20px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); opacity: 0.85; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+  .btn-ghost { background: transparent; color: var(--primary); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+
+  /* Input */
+  .input-group { margin-bottom: 14px; }
+  .input-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+  .input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--bg);
+    outline: none;
+  }
+  .input:focus { border-color: var(--primary); }
+
+  /* List item */
+  .list-item {
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .list-item:active { opacity: 0.75; }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 26px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(83,74,183,0.4);
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  /* Auth screen */
+  .auth-screen {
+    background: var(--bg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 32px 28px;
+  }
+  .logo-box {
+    width: 72px; height: 72px;
+    border-radius: 20px;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .logo-text { font-size: 28px; font-weight: 800; color: #fff; }
+
+  /* Section title */
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+  .section-sub { font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Avatar */
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 20px;
+    background: var(--primary-light);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  /* Status dot */
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+  /* Sidebar label used in info rows */
+  .info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--surface); }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { font-size: 12px; color: var(--text-tertiary); }
+  .info-value { font-size: 13px; color: var(--text-primary); font-weight: 500; text-align: right; max-width: 55%; }
+
+  /* Chip filter */
+  .chip {
+    padding: 5px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    background: var(--bg);
+  }
+  .chip.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+  /* Chips row */
+  .chips-row { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .chips-row::-webkit-scrollbar { display: none; }
+
+  /* Search bar */
+  .search-bar { padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .search-input { background: var(--surface); border: none; border-radius: 10px; padding: 9px 14px; font-size: 13px; color: var(--text-secondary); width: 100%; outline: none; }
+
+  /* History item */
+  .history-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--surface); }
+  .history-line { width: 2px; background: var(--border); border-radius: 1px; flex-shrink: 0; margin-top: 4px; }
+  .history-text { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .history-date { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* Pendencia */
+  .pend-card { background: var(--bg); border-radius: 14px; border-left: 4px solid var(--warning); border: 1px solid var(--border); border-left: 4px solid var(--warning); padding: 14px; margin-bottom: 10px; cursor: pointer; }
+
+  p { line-height: 1.5; }
+
+  /* Tooltip */
+  .demo-label {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .demo-label.show { opacity: 1; }
+
+  @media (max-width: 440px) {
+    body { padding: 0; align-items: flex-start; }
+    .device { width: 100%; height: 100vh; border-radius: 0; padding: 0; }
+    .device-screen { border-radius: 0; }
+    .notch { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="notch"></div>
+  <div class="device-screen">
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" opacity=".3"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 1.5C10.5 1.5 12.8 2.5 14.4 4.2L15.5 3.1C13.6 1.1 11 0 8 0C5 0 2.4 1.1.5 3.1L1.6 4.2C3.2 2.5 5.5 1.5 8 1.5Z"/><path d="M8 4.5C9.7 4.5 11.2 5.2 12.3 6.3L13.4 5.2C12 3.8 10.1 3 8 3C5.9 3 4 3.8 2.6 5.2L3.7 6.3C4.8 5.2 6.3 4.5 8 4.5Z"/><circle cx="8" cy="9.5" r="2.5"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="22.5" y="4" width="2.5" height="4" rx="1.5"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/></svg>
+      </div>
+    </div>
+
+    <div class="screen-content">
+
+      <!-- ==================== LOGIN ==================== -->
+      <div class="screen active" id="screen-login">
+        <div class="auth-screen">
+          <div class="logo-box"><span class="logo-text">IP</span></div>
+          <h1 style="text-align:center;font-size:26px;font-weight:800;color:var(--text-primary);margin-bottom:6px">InstaladorPro</h1>
+          <p style="text-align:center;font-size:13px;color:var(--text-secondary);margin-bottom:32px">Gerencie suas instalações com eficiência</p>
+
+          <div class="input-group">
+            <label class="input-label">Email</label>
+            <input class="input" type="email" placeholder="seu@email.com" value="joao@exemplo.com">
+          </div>
+          <div class="input-group" style="margin-bottom:20px">
+            <label class="input-label">Senha</label>
+            <input class="input" type="password" placeholder="••••••••" value="123456">
+          </div>
+
+          <button class="btn btn-primary" onclick="navigate('home')" style="margin-bottom:12px">Entrar</button>
+          <button class="btn btn-ghost" onclick="navigate('forgot')" style="margin-bottom:20px">Esqueci minha senha</button>
+
+          <p style="text-align:center;font-size:13px;color:var(--text-secondary)">
+            Não tem conta?
+            <span style="color:var(--primary);font-weight:700;cursor:pointer" onclick="navigate('register')"> Criar conta</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- ==================== REGISTER ==================== -->
+      <div class="screen" id="screen-register">
+        <div class="header">
+          <span class="header-back" onclick="navigate('login')">‹ Voltar</span>
+          <span class="header-title">Criar conta</span>
+        </div>
+        <div class="scroll" style="padding:20px;background:var(--bg)">
+          <div class="input-group"><label class="input-label">Nome completo</label><input class="input" placeholder="João Silva" value="João Silva"></div>
+          <div class="input-group"><label class="input-label">Email</label><input class="input" type="email" placeholder="seu@email.com" value="joao@exemplo.com"></div>
+          <div class="input-group"><label class="input-label">Senha</label><input class="input" type="password" placeholder="••••••••" value="123456"></div>
+          <div class="input-group" style="margin-bottom:24px"><label class="input-label">Confirmar senha</label><input class="input" type="password" placeholder="••••••••" value="123456"></div>
+          <button class="btn btn-primary" onclick="navigate('home')" style="margin-bottom:12px">Criar conta</button>
+          <button class="btn btn-ghost" onclick="navigate('login')">Já tenho conta</button>
+        </div>
+      </div>
+
+      <!-- ==================== FORGOT ==================== -->
+      <div class="screen" id="screen-forgot">
+        <div class="header">
+          <span class="header-back" onclick="navigate('login')">‹ Voltar</span>
+          <span class="header-title">Recuperar senha</span>
+        </div>
+        <div class="scroll" style="padding:20px;background:var(--bg)">
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6">Informe seu email e enviaremos um link para redefinir sua senha.</p>
+          <div class="input-group" style="margin-bottom:24px"><label class="input-label">Email</label><input class="input" type="email" placeholder="seu@email.com"></div>
+          <button class="btn btn-primary" onclick="showToast('Email enviado! Verifique sua caixa de entrada.');navigate('login')" style="margin-bottom:12px">Enviar link</button>
+          <button class="btn btn-ghost" onclick="navigate('login')">Voltar</button>
+        </div>
+      </div>
+
+      <!-- ==================== HOME ==================== -->
+      <div class="screen" id="screen-home">
+        <div class="header"><span class="header-title">InstaladorPro</span></div>
+        <div class="scroll" style="padding:16px">
+          <p style="font-size:11px;color:var(--text-tertiary);margin-bottom:4px">Segunda, 6 de abril</p>
+          <h2 style="font-size:22px;font-weight:800;color:var(--text-primary);margin-bottom:16px">Olá, João!</h2>
+
+          <div class="metrics-row">
+            <div class="metric-card">
+              <div class="metric-label">Recebido (mês)</div>
+              <div class="metric-value" style="color:var(--success)">R$ 4.200</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">A receber</div>
+              <div class="metric-value" style="color:var(--warning)">R$ 1.800</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span class="section-title" style="margin-bottom:0">Próximas instalações</span>
+            <span style="font-size:12px;color:var(--primary);font-weight:600;cursor:pointer" onclick="switchTab('instalacoes')">Ver todas</span>
+          </div>
+
+          <div class="list-item" onclick="navigate('detalhe')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <span style="font-size:14px;font-weight:700;color:var(--text-primary)">Câmera CFTV</span>
+              <span class="badge" style="background:var(--info-light);color:var(--info)">Agendada</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:2px">Rua das Flores, 123 — Vila Madalena</p>
+            <p style="font-size:12px;color:var(--primary)">TechSec Ltda</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)">
+              <span style="font-size:13px;font-weight:700">R$ 850,00</span>
+              <span style="font-size:12px;color:var(--text-tertiary)">08/04/2026</span>
+            </div>
+          </div>
+
+          <div class="list-item" onclick="navigate('detalhe')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <span style="font-size:14px;font-weight:700;color:var(--text-primary)">Alarme residencial</span>
+              <span class="badge" style="background:var(--warning-light);color:var(--warning)">Em andamento</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:2px">Av. Paulista, 1000 — Bela Vista</p>
+            <p style="font-size:12px;color:var(--primary)">SafeHome</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)">
+              <span style="font-size:13px;font-weight:700">R$ 1.200,00</span>
+              <span style="font-size:12px;color:var(--text-tertiary)">07/04/2026</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="navigate('nova')" style="margin-top:6px">+ Nova instalação</button>
+        </div>
+        <div class="tab-bar" id="tabbar-home">
+          <div class="tab-item active" onclick="switchTab('home')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="tab-label">Início</span></div>
+          <div class="tab-item" onclick="switchTab('instalacoes')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg></div><span class="tab-label">Instalações</span></div>
+          <div class="tab-item" onclick="switchTab('empresas')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><span class="tab-label">Empresas</span></div>
+          <div class="tab-item" onclick="switchTab('financeiro')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="tab-label">Financeiro</span></div>
+          <div class="tab-item" onclick="switchTab('perfil')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="tab-label">Perfil</span></div>
+        </div>
+      </div>
+
+      <!-- ==================== INSTALAÇÕES ==================== -->
+      <div class="screen" id="screen-instalacoes">
+        <div class="header"><span class="header-title">Instalações</span></div>
+        <div class="search-bar"><input class="search-input" placeholder="Buscar por tipo, endereço ou empresa..."></div>
+        <div class="chips-row">
+          <span class="chip active">Todas</span>
+          <span class="chip" onclick="chipSelect(this)">Agendadas</span>
+          <span class="chip" onclick="chipSelect(this)">Em andamento</span>
+          <span class="chip" onclick="chipSelect(this)">Concluídas</span>
+          <span class="chip" onclick="chipSelect(this)">Pagas</span>
+        </div>
+        <div class="scroll" style="padding:16px;position:relative">
+          <div class="list-item" onclick="navigate('detalhe')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><span style="font-size:14px;font-weight:700">Câmera CFTV</span><span class="badge" style="background:var(--info-light);color:var(--info)">Agendada</span></div>
+            <p style="font-size:12px;color:var(--text-secondary)">Rua das Flores, 123 — Vila Madalena</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">TechSec Ltda</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)"><span style="font-size:13px;font-weight:700">R$ 850,00</span><span style="font-size:12px;color:var(--text-tertiary)">08/04/2026</span></div>
+          </div>
+          <div class="list-item" onclick="navigate('detalhe')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><span style="font-size:14px;font-weight:700">Alarme residencial</span><span class="badge" style="background:var(--warning-light);color:var(--warning)">Em andamento</span></div>
+            <p style="font-size:12px;color:var(--text-secondary)">Av. Paulista, 1000 — Bela Vista</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">SafeHome</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)"><span style="font-size:13px;font-weight:700">R$ 1.200,00</span><span style="font-size:12px;color:var(--text-tertiary)">07/04/2026</span></div>
+          </div>
+          <div class="list-item" onclick="navigate('detalhe2')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><span style="font-size:14px;font-weight:700">Portão automático</span><span class="badge" style="background:var(--success-light);color:var(--success)">Concluída</span></div>
+            <p style="font-size:12px;color:var(--text-secondary)">Rua Augusta, 500 — Consolação</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">CondomínioVerde</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)"><span style="font-size:13px;font-weight:700">R$ 2.400,00</span><span style="font-size:12px;color:var(--text-tertiary)">02/04/2026</span></div>
+          </div>
+          <div class="list-item">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><span style="font-size:14px;font-weight:700">Rede elétrica</span><span class="badge" style="background:#EAF3DE;color:#3B6D11">Paga</span></div>
+            <p style="font-size:12px;color:var(--text-secondary)">Rua Haddock Lobo, 595</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">TechSec Ltda</p>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface)"><span style="font-size:13px;font-weight:700">R$ 1.800,00</span><span style="font-size:12px;color:var(--text-tertiary)">28/03/2026</span></div>
+          </div>
+          <button class="fab" onclick="navigate('nova')">+</button>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="tab-label">Início</span></div>
+          <div class="tab-item active" onclick="switchTab('instalacoes')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg></div><span class="tab-label">Instalações</span></div>
+          <div class="tab-item" onclick="switchTab('empresas')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><span class="tab-label">Empresas</span></div>
+          <div class="tab-item" onclick="switchTab('financeiro')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="tab-label">Financeiro</span></div>
+          <div class="tab-item" onclick="switchTab('perfil')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="tab-label">Perfil</span></div>
+        </div>
+      </div>
+
+      <!-- ==================== DETALHE ==================== -->
+      <div class="screen" id="screen-detalhe">
+        <div class="header">
+          <span class="header-back" onclick="navigate('instalacoes')">‹</span>
+          <span class="header-title">Detalhes</span>
+        </div>
+        <div class="scroll" style="padding:16px">
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <span style="font-size:18px;font-weight:800;color:var(--text-primary);flex:1;margin-right:10px">Câmera CFTV</span>
+              <span class="badge" style="background:var(--info-light);color:var(--info)">Agendada</span>
+            </div>
+            <p style="font-size:13px;color:var(--primary);font-weight:600">TechSec Ltda</p>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="info-row"><span class="info-label">Endereço</span><span class="info-value">Rua das Flores, 123</span></div>
+            <div class="info-row"><span class="info-label">Valor combinado</span><span class="info-value" style="color:var(--text-primary);font-weight:700">R$ 850,00</span></div>
+            <div class="info-row"><span class="info-label">Data prevista</span><span class="info-value">08/04/2026</span></div>
+            <div class="info-row"><span class="info-label">Criada</span><span class="info-value">5 dias atrás</span></div>
+            <div class="info-row"><span class="info-label">Observações</span><span class="info-value">Instalar 4 câmeras externas + DVR</span></div>
+          </div>
+
+          <button class="btn btn-primary" onclick="showToast('Status atualizado: Em andamento');navigate('detalhe-em-andamento')" style="margin-bottom:10px">Iniciar serviço</button>
+          <button class="btn btn-outline" onclick="navigate('recebimentos')" style="margin-bottom:10px">Ver recebimentos</button>
+
+          <div class="section-title" style="margin-top:4px">Histórico de status</div>
+          <div style="background:var(--bg);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div class="history-item">
+              <div class="history-line"></div>
+              <div><div class="history-text">Criada como Agendada</div><div class="history-date">01/04/2026</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== DETALHE EM ANDAMENTO ==================== -->
+      <div class="screen" id="screen-detalhe-em-andamento">
+        <div class="header">
+          <span class="header-back" onclick="navigate('instalacoes')">‹</span>
+          <span class="header-title">Detalhes</span>
+        </div>
+        <div class="scroll" style="padding:16px">
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <span style="font-size:18px;font-weight:800;color:var(--text-primary);flex:1;margin-right:10px">Câmera CFTV</span>
+              <span class="badge" style="background:var(--warning-light);color:var(--warning)">Em andamento</span>
+            </div>
+            <p style="font-size:13px;color:var(--primary);font-weight:600">TechSec Ltda</p>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="info-row"><span class="info-label">Endereço</span><span class="info-value">Rua das Flores, 123</span></div>
+            <div class="info-row"><span class="info-label">Valor combinado</span><span class="info-value" style="font-weight:700">R$ 850,00</span></div>
+            <div class="info-row"><span class="info-label">Data prevista</span><span class="info-value">08/04/2026</span></div>
+          </div>
+          <button class="btn btn-success" onclick="showToast('Serviço concluído!');navigate('detalhe-concluida')" style="margin-bottom:10px">Concluir serviço</button>
+          <div class="section-title" style="margin-top:4px">Histórico</div>
+          <div style="background:var(--bg);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div class="history-item"><div class="history-line"></div><div><div class="history-text">Agendada → Em andamento</div><div class="history-date">Hoje</div></div></div>
+            <div class="history-item"><div class="history-line"></div><div><div class="history-text">Criada como Agendada</div><div class="history-date">01/04/2026</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== DETALHE CONCLUIDA ==================== -->
+      <div class="screen" id="screen-detalhe-concluida">
+        <div class="header"><span class="header-back" onclick="navigate('instalacoes')">‹</span><span class="header-title">Detalhes</span></div>
+        <div class="scroll" style="padding:16px">
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <span style="font-size:18px;font-weight:800;color:var(--text-primary);flex:1;margin-right:10px">Câmera CFTV</span>
+              <span class="badge" style="background:var(--success-light);color:var(--success)">Concluída</span>
+            </div>
+            <p style="font-size:13px;color:var(--primary);font-weight:600">TechSec Ltda</p>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="info-row"><span class="info-label">Valor combinado</span><span class="info-value" style="font-weight:700">R$ 850,00</span></div>
+            <div class="info-row"><span class="info-label">Concluída em</span><span class="info-value">06/04/2026</span></div>
+          </div>
+          <button class="btn btn-primary" onclick="navigate('recebimentos')" style="margin-bottom:10px">Registrar recebimento</button>
+          <div class="section-title" style="margin-top:4px">Histórico</div>
+          <div style="background:var(--bg);border-radius:14px;border:1px solid var(--border);padding:14px">
+            <div class="history-item"><div class="history-line"></div><div><div class="history-text">Em andamento → Concluída</div><div class="history-date">Hoje</div></div></div>
+            <div class="history-item"><div class="history-line"></div><div><div class="history-text">Agendada → Em andamento</div><div class="history-date">Hoje</div></div></div>
+            <div class="history-item"><div class="history-line"></div><div><div class="history-text">Criada como Agendada</div><div class="history-date">01/04/2026</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== DETALHE 2 ==================== -->
+      <div class="screen" id="screen-detalhe2">
+        <div class="header"><span class="header-back" onclick="navigate('instalacoes')">‹</span><span class="header-title">Detalhes</span></div>
+        <div class="scroll" style="padding:16px">
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+              <span style="font-size:18px;font-weight:800;color:var(--text-primary);flex:1;margin-right:10px">Portão automático</span>
+              <span class="badge" style="background:var(--success-light);color:var(--success)">Concluída</span>
+            </div>
+            <p style="font-size:13px;color:var(--primary);font-weight:600">CondomínioVerde</p>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="info-row"><span class="info-label">Endereço</span><span class="info-value">Rua Augusta, 500</span></div>
+            <div class="info-row"><span class="info-label">Valor combinado</span><span class="info-value" style="font-weight:700">R$ 2.400,00</span></div>
+            <div class="info-row"><span class="info-label">Concluída em</span><span class="info-value">02/04/2026</span></div>
+            <div class="info-row"><span class="info-label">Total recebido</span><span class="info-value" style="color:var(--warning);font-weight:700">R$ 1.200,00</span></div>
+            <div class="info-row"><span class="info-label">Saldo pendente</span><span class="info-value" style="color:var(--danger);font-weight:700">R$ 1.200,00</span></div>
+          </div>
+          <button class="btn btn-primary" onclick="navigate('recebimentos')" style="margin-bottom:10px">Registrar recebimento</button>
+        </div>
+      </div>
+
+      <!-- ==================== NOVA INSTALAÇÃO ==================== -->
+      <div class="screen" id="screen-nova">
+        <div class="header"><span class="header-back" onclick="navigate('instalacoes')">‹</span><span class="header-title">Nova instalação</span></div>
+        <div class="scroll" style="padding:16px;background:var(--bg)">
+          <div class="section-sub">Tipo de serviço</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+            <span class="chip active" onclick="chipSelect(this)">Câmera CFTV</span>
+            <span class="chip" onclick="chipSelect(this)">Alarme</span>
+            <span class="chip" onclick="chipSelect(this)">Interfone</span>
+            <span class="chip" onclick="chipSelect(this)">Portão automático</span>
+            <span class="chip" onclick="chipSelect(this)">Rede elétrica</span>
+            <span class="chip" onclick="chipSelect(this)">Outro</span>
+          </div>
+          <div class="input-group"><label class="input-label">Endereço do serviço *</label><input class="input" placeholder="Rua, número, bairro, cidade"></div>
+          <div class="section-sub">Empresa contratante</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+            <span class="chip active" onclick="chipSelect(this)">Nenhuma</span>
+            <span class="chip" onclick="chipSelect(this)">TechSec Ltda</span>
+            <span class="chip" onclick="chipSelect(this)">SafeHome</span>
+            <span class="chip" onclick="chipSelect(this)">CondomínioVerde</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+            <div class="input-group"><label class="input-label">Valor (R$)</label><input class="input" type="number" placeholder="0,00"></div>
+            <div class="input-group"><label class="input-label">Data prevista</label><input class="input" type="date"></div>
+          </div>
+          <div class="input-group" style="margin-bottom:24px"><label class="input-label">Observações</label><textarea class="input" style="height:70px;resize:none" placeholder="Informações adicionais..."></textarea></div>
+          <button class="btn btn-primary" onclick="showToast('Instalação criada com sucesso!');navigate('instalacoes')" style="margin-bottom:10px">Salvar instalação</button>
+          <button class="btn btn-ghost" onclick="navigate('instalacoes')">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- ==================== EMPRESAS ==================== -->
+      <div class="screen" id="screen-empresas">
+        <div class="header"><span class="header-title">Empresas</span></div>
+        <div class="scroll" style="padding:16px;position:relative">
+          <div class="list-item">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="avatar">TS</div>
+              <div style="flex:1">
+                <p style="font-size:14px;font-weight:700;color:var(--text-primary)">TechSec Ltda</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">12.345.678/0001-90</p>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">Carlos Mendes</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">(11) 98765-4321</p>
+          </div>
+          <div class="list-item">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="avatar" style="background:#E1F5EE;color:#085041">SH</div>
+              <div style="flex:1">
+                <p style="font-size:14px;font-weight:700;color:var(--text-primary)">SafeHome</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">98.765.432/0001-10</p>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">Ana Souza</p>
+            <p style="font-size:12px;color:var(--primary);margin-top:2px">(11) 91234-5678</p>
+          </div>
+          <div class="list-item">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="avatar" style="background:#FAEEDA;color:#633806">CV</div>
+              <div style="flex:1">
+                <p style="font-size:14px;font-weight:700;color:var(--text-primary)">CondomínioVerde</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">11.222.333/0001-44</p>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">Marcos Lima</p>
+          </div>
+          <button class="fab" onclick="showToast('Abre modal de nova empresa')">+</button>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="tab-label">Início</span></div>
+          <div class="tab-item" onclick="switchTab('instalacoes')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg></div><span class="tab-label">Instalações</span></div>
+          <div class="tab-item active" onclick="switchTab('empresas')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><span class="tab-label">Empresas</span></div>
+          <div class="tab-item" onclick="switchTab('financeiro')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="tab-label">Financeiro</span></div>
+          <div class="tab-item" onclick="switchTab('perfil')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="tab-label">Perfil</span></div>
+        </div>
+      </div>
+
+      <!-- ==================== FINANCEIRO ==================== -->
+      <div class="screen" id="screen-financeiro">
+        <div class="header"><span class="header-title">Financeiro</span></div>
+        <div class="scroll" style="padding:16px">
+          <div class="metrics-row" style="margin-bottom:16px">
+            <div class="metric-card" style="border-left:4px solid var(--success)">
+              <div class="metric-label">Recebido (mês)</div>
+              <div class="metric-value" style="color:var(--success)">R$ 4.200</div>
+            </div>
+            <div class="metric-card" style="border-left:4px solid var(--warning)">
+              <div class="metric-label">A receber</div>
+              <div class="metric-value" style="color:var(--warning)">R$ 1.200</div>
+            </div>
+          </div>
+
+          <div class="section-title">Últimos meses</div>
+          <div class="card" style="padding:12px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--surface)"><span style="font-size:13px;color:var(--text-secondary)">abril 2026</span><span style="font-size:13px;font-weight:700">R$ 4.200,00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--surface)"><span style="font-size:13px;color:var(--text-secondary)">março 2026</span><span style="font-size:13px;font-weight:700">R$ 6.800,00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:var(--text-secondary)">fevereiro 2026</span><span style="font-size:13px;font-weight:700">R$ 3.500,00</span></div>
+          </div>
+
+          <div class="section-title">Pendências (1)</div>
+          <div class="pend-card" onclick="navigate('detalhe2')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <span style="font-size:14px;font-weight:700;color:var(--text-primary);flex:1;margin-right:8px">Portão automático</span>
+              <span style="font-size:15px;font-weight:800;color:var(--warning)">R$ 1.200</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">CondomínioVerde</p>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:var(--text-tertiary)">Concluída em 02/04/2026</span>
+              <span class="badge" style="background:var(--warning-light);color:var(--warning);font-size:10px">Pendente</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="tab-label">Início</span></div>
+          <div class="tab-item" onclick="switchTab('instalacoes')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg></div><span class="tab-label">Instalações</span></div>
+          <div class="tab-item" onclick="switchTab('empresas')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><span class="tab-label">Empresas</span></div>
+          <div class="tab-item active" onclick="switchTab('financeiro')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="tab-label">Financeiro</span></div>
+          <div class="tab-item" onclick="switchTab('perfil')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="tab-label">Perfil</span></div>
+        </div>
+      </div>
+
+      <!-- ==================== RECEBIMENTOS ==================== -->
+      <div class="screen" id="screen-recebimentos">
+        <div class="header"><span class="header-back" onclick="history.back(), navigate('detalhe-concluida')">‹</span><span class="header-title">Recebimentos</span></div>
+        <div class="scroll" style="padding:16px;position:relative">
+          <div style="background:var(--bg);border-radius:14px;border:1px solid var(--border);padding:16px;text-align:center;margin-bottom:16px">
+            <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:4px">Total recebido</p>
+            <p style="font-size:28px;font-weight:800;color:var(--success)">R$ 0,00</p>
+          </div>
+          <p style="text-align:center;color:var(--text-tertiary);font-size:13px;padding:20px">Nenhum recebimento registrado</p>
+          <button class="btn btn-success" onclick="showToast('Recebimento de R$ 850,00 via PIX registrado!')">+ Registrar recebimento</button>
+        </div>
+      </div>
+
+      <!-- ==================== PERFIL ==================== -->
+      <div class="screen" id="screen-perfil">
+        <div class="header"><span class="header-title">Meu perfil</span></div>
+        <div class="scroll" style="padding:16px">
+          <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px">
+            <div style="width:80px;height:80px;border-radius:40px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin-bottom:10px">JS</div>
+            <p style="font-size:13px;color:var(--text-secondary)">joao@exemplo.com</p>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <p class="section-sub">Dados pessoais</p>
+            <div class="input-group"><label class="input-label">Nome completo</label><input class="input" value="João Silva"></div>
+            <div class="input-group"><label class="input-label">Telefone</label><input class="input" value="(11) 99999-1234"></div>
+            <div class="input-group" style="margin-bottom:4px"><label class="input-label">Especialidade</label><input class="input" value="CFTV e Alarmes"></div>
+            <button class="btn btn-primary" onclick="showToast('Perfil atualizado com sucesso!')">Salvar alterações</button>
+          </div>
+          <div class="card">
+            <p class="section-sub">Conta</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="showToast('Saindo...');setTimeout(()=>navigate(\'login\'),800)">
+              <span style="font-size:14px;color:var(--danger)">Sair da conta</span>
+              <span style="color:var(--text-tertiary);font-size:20px">›</span>
+            </div>
+          </div>
+          <p style="text-align:center;font-size:11px;color:var(--text-tertiary);margin-top:16px">InstaladorPro v1.0.0</p>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item" onclick="switchTab('home')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span class="tab-label">Início</span></div>
+          <div class="tab-item" onclick="switchTab('instalacoes')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg></div><span class="tab-label">Instalações</span></div>
+          <div class="tab-item" onclick="switchTab('empresas')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><span class="tab-label">Empresas</span></div>
+          <div class="tab-item" onclick="switchTab('financeiro')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><span class="tab-label">Financeiro</span></div>
+          <div class="tab-item active" onclick="switchTab('perfil')"><div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="tab-label">Perfil</span></div>
+        </div>
+      </div>
+
+    </div><!-- /screen-content -->
+
+  </div><!-- /device-screen -->
+</div><!-- /device -->
+
+<!-- Toast -->
+<div class="demo-label" id="toast"></div>
+
+<script>
+  let current = 'login'
+
+  function navigate(id) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active')
+    })
+    const target = document.getElementById('screen-' + id)
+    if (target) {
+      target.classList.add('active')
+      current = id
+      // scroll to top
+      const scroll = target.querySelector('.scroll')
+      if (scroll) scroll.scrollTop = 0
+    }
+  }
+
+  function switchTab(tab) {
+    navigate(tab)
+  }
+
+  function chipSelect(el) {
+    const parent = el.closest('div')
+    parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'))
+    el.classList.add('active')
+  }
+
+  let toastTimer
+  function showToast(msg) {
+    const toast = document.getElementById('toast')
+    toast.textContent = msg
+    toast.classList.add('show')
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500)
+  }
+
+  // Update clock
+  function updateClock() {
+    const now = new Date()
+    const h = now.getHours().toString().padStart(2,'0')
+    const m = now.getMinutes().toString().padStart(2,'0')
+    document.querySelector('.status-time').textContent = `${h}:${m}`
+  }
+  updateClock()
+  setInterval(updateClock, 10000)
+</script>
+</body>
+</html>

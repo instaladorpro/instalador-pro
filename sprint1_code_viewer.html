@@ -1,0 +1,593 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.layout{display:grid;grid-template-columns:220px 1fr;gap:0;min-height:500px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.sidebar{background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);padding:12px 0;overflow-y:auto}
+.sidebar-section{margin-bottom:4px}
+.sidebar-label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:.05em}
+.file-item{display:flex;align-items:center;gap:7px;padding:5px 14px;cursor:pointer;font-size:12px;color:var(--color-text-secondary);font-family:var(--font-mono);transition:background .1s;border-radius:0}
+.file-item:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+.file-item.active{background:var(--color-background-primary);color:var(--color-text-primary);font-weight:500}
+.file-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.main{display:flex;flex-direction:column;min-height:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+.filename{font-size:12px;font-family:var(--font-mono);color:var(--color-text-secondary)}
+.copy-btn{font-size:11px;padding:3px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-secondary)}
+.copy-btn:hover{background:var(--color-background-secondary)}
+.code-area{flex:1;overflow:auto;padding:16px}
+pre{font-family:var(--font-mono);font-size:12px;line-height:1.75;color:var(--color-text-primary);white-space:pre;margin:0}
+.kw{color:#534AB7;font-weight:500}
+.str{color:#0F6E56}
+.cm{color:var(--color-text-tertiary);font-style:italic}
+.fn{color:#854F0B}
+.ty{color:#185FA5}
+.next-btn{margin-top:1rem;font-size:13px;padding:8px 18px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-primary)}
+.next-btn:hover{background:var(--color-background-secondary)}
+</style>
+
+<div style="padding:1rem 0">
+<div class="layout">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <span class="filename" id="topbar-filename">selecione um arquivo</span>
+      <button class="copy-btn" id="copy-btn">Copiar</button>
+    </div>
+    <div class="code-area"><pre id="code-display"><span style="color:var(--color-text-tertiary);font-style:italic">← selecione um arquivo na sidebar</span></pre></div>
+  </div>
+</div>
+<button class="next-btn" onclick="sendPrompt('/agent git — gere a estrutura inicial de commits do InstaladorPro')">Próximo: /agent git ↗</button>
+</div>
+
+<script>
+const files = [
+  {
+    section: 'Setup inicial',
+    color: '#888780',
+    items: [
+      {
+        name: 'package.json',
+        lang: 'json',
+        code: `{
+  <span class="str">"name"</span>: <span class="str">"instalador-pro"</span>,
+  <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,
+  <span class="str">"main"</span>: <span class="str">"expo-router/entry"</span>,
+  <span class="str">"scripts"</span>: {
+    <span class="str">"start"</span>: <span class="str">"expo start"</span>,
+    <span class="str">"android"</span>: <span class="str">"expo run:android"</span>,
+    <span class="str">"ios"</span>: <span class="str">"expo run:ios"</span>,
+    <span class="str">"lint"</span>: <span class="str">"eslint . --ext .ts,.tsx"</span>,
+    <span class="str">"typecheck"</span>: <span class="str">"tsc --noEmit"</span>
+  },
+  <span class="str">"dependencies"</span>: {
+    <span class="str">"expo"</span>: <span class="str">"~51.0.0"</span>,
+    <span class="str">"expo-router"</span>: <span class="str">"~3.5.0"</span>,
+    <span class="str">"expo-status-bar"</span>: <span class="str">"~1.12.0"</span>,
+    <span class="str">"expo-notifications"</span>: <span class="str">"~0.28.0"</span>,
+    <span class="str">"expo-image-picker"</span>: <span class="str">"~15.0.0"</span>,
+    <span class="str">"expo-secure-store"</span>: <span class="str">"~13.0.0"</span>,
+    <span class="str">"react"</span>: <span class="str">"18.2.0"</span>,
+    <span class="str">"react-native"</span>: <span class="str">"0.74.0"</span>,
+    <span class="str">"@supabase/supabase-js"</span>: <span class="str">"^2.43.0"</span>,
+    <span class="str">"zustand"</span>: <span class="str">"^4.5.0"</span>,
+    <span class="str">"@tanstack/react-query"</span>: <span class="str">"^5.40.0"</span>,
+    <span class="str">"react-native-mmkv"</span>: <span class="str">"^2.12.0"</span>,
+    <span class="str">"zod"</span>: <span class="str">"^3.23.0"</span>,
+    <span class="str">"react-hook-form"</span>: <span class="str">"^7.51.0"</span>,
+    <span class="str">"@hookform/resolvers"</span>: <span class="str">"^3.4.0"</span>,
+    <span class="str">"react-native-safe-area-context"</span>: <span class="str">"4.10.0"</span>,
+    <span class="str">"react-native-screens"</span>: <span class="str">"3.31.0"</span>
+  },
+  <span class="str">"devDependencies"</span>: {
+    <span class="str">"@babel/core"</span>: <span class="str">"^7.24.0"</span>,
+    <span class="str">"@types/react"</span>: <span class="str">"~18.2.0"</span>,
+    <span class="str">"typescript"</span>: <span class="str">"^5.4.0"</span>,
+    <span class="str">"eslint"</span>: <span class="str">"^8.57.0"</span>,
+    <span class="str">"eslint-config-expo"</span>: <span class="str">"^7.0.0"</span>
+  }
+}`
+      },
+      {
+        name: '.env.local',
+        lang: 'bash',
+        code: `<span class="cm"># Supabase — copie do painel: Settings → API</span>
+EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+
+<span class="cm"># Nunca commitar este arquivo!</span>
+<span class="cm"># Adicione .env.local ao .gitignore</span>`
+      }
+    ]
+  },
+  {
+    section: 'src/types',
+    color: '#185FA5',
+    items: [
+      {
+        name: 'index.ts',
+        lang: 'ts',
+        code: `<span class="cm">// Tipos de domínio do InstaladorPro</span>
+
+<span class="kw">export type</span> <span class="ty">StatusInstalacao</span> =
+  | <span class="str">'agendada'</span>
+  | <span class="str">'em_andamento'</span>
+  | <span class="str">'concluida'</span>
+  | <span class="str">'paga'</span>
+  | <span class="str">'cancelada'</span>
+
+<span class="kw">export type</span> <span class="ty">FormaPagamento</span> =
+  | <span class="str">'pix'</span> | <span class="str">'dinheiro'</span> | <span class="str">'transferencia'</span>
+  | <span class="str">'boleto'</span> | <span class="str">'cartao'</span>
+
+<span class="kw">export interface</span> <span class="ty">Instalador</span> {
+  id: <span class="ty">string</span>
+  auth_user_id: <span class="ty">string</span>
+  nome: <span class="ty">string</span>
+  email: <span class="ty">string</span>
+  telefone?: <span class="ty">string</span>
+  especialidade?: <span class="ty">string</span>
+  foto_url?: <span class="ty">string</span>
+  created_at: <span class="ty">string</span>
+}
+
+<span class="kw">export interface</span> <span class="ty">Empresa</span> {
+  id: <span class="ty">string</span>
+  instalador_id: <span class="ty">string</span>
+  nome: <span class="ty">string</span>
+  cnpj?: <span class="ty">string</span>
+  contato_nome?: <span class="ty">string</span>
+  contato_telefone?: <span class="ty">string</span>
+  email?: <span class="ty">string</span>
+  endereco?: <span class="ty">string</span>
+  ativa: <span class="ty">boolean</span>
+  created_at: <span class="ty">string</span>
+}
+
+<span class="kw">export interface</span> <span class="ty">Instalacao</span> {
+  id: <span class="ty">string</span>
+  instalador_id: <span class="ty">string</span>
+  empresa_id?: <span class="ty">string</span>
+  empresa?: <span class="ty">Empresa</span>
+  tipo_servico: <span class="ty">string</span>
+  endereco: <span class="ty">string</span>
+  status: <span class="ty">StatusInstalacao</span>
+  valor_combinado?: <span class="ty">number</span>
+  data_prevista?: <span class="ty">string</span>
+  data_conclusao?: <span class="ty">string</span>
+  observacoes?: <span class="ty">string</span>
+  created_at: <span class="ty">string</span>
+  updated_at: <span class="ty">string</span>
+}
+
+<span class="kw">export interface</span> <span class="ty">Recebimento</span> {
+  id: <span class="ty">string</span>
+  instalacao_id: <span class="ty">string</span>
+  instalador_id: <span class="ty">string</span>
+  valor: <span class="ty">number</span>
+  forma_pagamento: <span class="ty">FormaPagamento</span>
+  data_recebimento: <span class="ty">string</span>
+  observacoes?: <span class="ty">string</span>
+  created_at: <span class="ty">string</span>
+}`
+      }
+    ]
+  },
+  {
+    section: 'src/services',
+    color: '#0F6E56',
+    items: [
+      {
+        name: 'supabase.ts',
+        lang: 'ts',
+        code: `<span class="kw">import</span> { createClient } <span class="kw">from</span> <span class="str">'@supabase/supabase-js'</span>
+<span class="kw">import</span> { MMKV } <span class="kw">from</span> <span class="str">'react-native-mmkv'</span>
+
+<span class="kw">const</span> storage = <span class="kw">new</span> <span class="fn">MMKV</span>({ id: <span class="str">'supabase-auth'</span> })
+
+<span class="cm">// Adapter MMKV para o Supabase Auth</span>
+<span class="kw">const</span> mmkvAdapter = {
+  <span class="fn">getItem</span>: (key: <span class="ty">string</span>) => storage.<span class="fn">getString</span>(key) ?? <span class="kw">null</span>,
+  <span class="fn">setItem</span>: (key: <span class="ty">string</span>, value: <span class="ty">string</span>) => storage.<span class="fn">set</span>(key, value),
+  <span class="fn">removeItem</span>: (key: <span class="ty">string</span>) => storage.<span class="fn">delete</span>(key),
+}
+
+<span class="kw">export const</span> supabase = <span class="fn">createClient</span>(
+  process.env.<span class="ty">EXPO_PUBLIC_SUPABASE_URL</span>!,
+  process.env.<span class="ty">EXPO_PUBLIC_SUPABASE_ANON_KEY</span>!,
+  {
+    auth: {
+      storage: mmkvAdapter,
+      autoRefreshToken: <span class="kw">true</span>,
+      persistSession: <span class="kw">true</span>,
+      detectSessionInUrl: <span class="kw">false</span>,
+    },
+  }
+)`
+      },
+      {
+        name: 'auth.service.ts',
+        lang: 'ts',
+        code: `<span class="kw">import</span> { supabase } <span class="kw">from</span> <span class="str">'./supabase'</span>
+
+<span class="kw">export const</span> authService = {
+  <span class="kw">async</span> <span class="fn">signUp</span>(email: <span class="ty">string</span>, password: <span class="ty">string</span>, nome: <span class="ty">string</span>) {
+    <span class="kw">const</span> { data, error } = <span class="kw">await</span> supabase.auth.<span class="fn">signUp</span>({
+      email,
+      password,
+      options: { data: { nome } },
+    })
+    <span class="kw">if</span> (error) <span class="kw">throw</span> error
+    <span class="kw">return</span> data
+  },
+
+  <span class="kw">async</span> <span class="fn">signIn</span>(email: <span class="ty">string</span>, password: <span class="ty">string</span>) {
+    <span class="kw">const</span> { data, error } = <span class="kw">await</span> supabase.auth.<span class="fn">signInWithPassword</span>({
+      email,
+      password,
+    })
+    <span class="kw">if</span> (error) <span class="kw">throw</span> error
+    <span class="kw">return</span> data
+  },
+
+  <span class="kw">async</span> <span class="fn">signOut</span>() {
+    <span class="kw">const</span> { error } = <span class="kw">await</span> supabase.auth.<span class="fn">signOut</span>()
+    <span class="kw">if</span> (error) <span class="kw">throw</span> error
+  },
+
+  <span class="kw">async</span> <span class="fn">resetPassword</span>(email: <span class="ty">string</span>) {
+    <span class="kw">const</span> { error } = <span class="kw">await</span> supabase.auth.<span class="fn">resetPasswordForEmail</span>(email)
+    <span class="kw">if</span> (error) <span class="kw">throw</span> error
+  },
+
+  <span class="fn">getSession</span>() {
+    <span class="kw">return</span> supabase.auth.<span class="fn">getSession</span>()
+  },
+
+  <span class="fn">onAuthStateChange</span>(callback: Parameters&lt;
+    <span class="kw">typeof</span> supabase.auth.onAuthStateChange
+  &gt;[<span class="str">0</span>]) {
+    <span class="kw">return</span> supabase.auth.<span class="fn">onAuthStateChange</span>(callback)
+  },
+}`
+      }
+    ]
+  },
+  {
+    section: 'src/store',
+    color: '#854F0B',
+    items: [
+      {
+        name: 'auth.store.ts',
+        lang: 'ts',
+        code: `<span class="kw">import</span> { create } <span class="kw">from</span> <span class="str">'zustand'</span>
+<span class="kw">import</span> { <span class="ty">Session</span>, <span class="ty">User</span> } <span class="kw">from</span> <span class="str">'@supabase/supabase-js'</span>
+<span class="kw">import</span> { <span class="ty">Instalador</span> } <span class="kw">from</span> <span class="str">'../types'</span>
+<span class="kw">import</span> { supabase } <span class="kw">from</span> <span class="str">'../services/supabase'</span>
+
+<span class="kw">interface</span> <span class="ty">AuthState</span> {
+  session: <span class="ty">Session</span> | <span class="kw">null</span>
+  user: <span class="ty">User</span> | <span class="kw">null</span>
+  instalador: <span class="ty">Instalador</span> | <span class="kw">null</span>
+  isLoading: <span class="ty">boolean</span>
+  <span class="fn">setSession</span>: (session: <span class="ty">Session</span> | <span class="kw">null</span>) => <span class="ty">void</span>
+  <span class="fn">fetchInstalador</span>: () => <span class="ty">Promise</span>&lt;<span class="ty">void</span>&gt;
+  <span class="fn">reset</span>: () => <span class="ty">void</span>
+}
+
+<span class="kw">export const</span> useAuthStore = <span class="fn">create</span>&lt;<span class="ty">AuthState</span>&gt;()((set, get) => ({
+  session: <span class="kw">null</span>,
+  user: <span class="kw">null</span>,
+  instalador: <span class="kw">null</span>,
+  isLoading: <span class="kw">true</span>,
+
+  <span class="fn">setSession</span>: (session) => {
+    <span class="fn">set</span>({ session, user: session?.user ?? <span class="kw">null</span>, isLoading: <span class="kw">false</span> })
+    <span class="kw">if</span> (session) get().<span class="fn">fetchInstalador</span>()
+  },
+
+  <span class="fn">fetchInstalador</span>: <span class="kw">async</span> () => {
+    <span class="kw">const</span> { data } = <span class="kw">await</span> supabase
+      .<span class="fn">from</span>(<span class="str">'instaladores'</span>)
+      .<span class="fn">select</span>(<span class="str">'*'</span>)
+      .<span class="fn">single</span>()
+    <span class="kw">if</span> (data) <span class="fn">set</span>({ instalador: data })
+  },
+
+  <span class="fn">reset</span>: () => <span class="fn">set</span>({
+    session: <span class="kw">null</span>, user: <span class="kw">null</span>,
+    instalador: <span class="kw">null</span>, isLoading: <span class="kw">false</span>,
+  }),
+}))`
+      }
+    ]
+  },
+  {
+    section: 'app/(auth)',
+    color: '#534AB7',
+    items: [
+      {
+        name: '_layout.tsx',
+        lang: 'tsx',
+        code: `<span class="kw">import</span> { Stack } <span class="kw">from</span> <span class="str">'expo-router'</span>
+
+<span class="kw">export default function</span> <span class="fn">AuthLayout</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="ty">Stack</span> screenOptions={{ headerShown: <span class="kw">false</span> }}&gt;
+      &lt;<span class="ty">Stack.Screen</span> name=<span class="str">"login"</span> /&gt;
+      &lt;<span class="ty">Stack.Screen</span> name=<span class="str">"register"</span> /&gt;
+      &lt;<span class="ty">Stack.Screen</span> name=<span class="str">"forgot-password"</span> /&gt;
+    &lt;/<span class="ty">Stack</span>&gt;
+  )
+}`
+      },
+      {
+        name: 'login.tsx',
+        lang: 'tsx',
+        code: `<span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>
+<span class="kw">import</span> { View, Text, TextInput, TouchableOpacity,
+  StyleSheet, ActivityIndicator, Alert } <span class="kw">from</span> <span class="str">'react-native'</span>
+<span class="kw">import</span> { router } <span class="kw">from</span> <span class="str">'expo-router'</span>
+<span class="kw">import</span> { authService } <span class="kw">from</span> <span class="str">'../../src/services/auth.service'</span>
+
+<span class="kw">export default function</span> <span class="fn">LoginScreen</span>() {
+  <span class="kw">const</span> [email, setEmail] = <span class="fn">useState</span>(<span class="str">''</span>)
+  <span class="kw">const</span> [password, setPassword] = <span class="fn">useState</span>(<span class="str">''</span>)
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">false</span>)
+
+  <span class="kw">async function</span> <span class="fn">handleLogin</span>() {
+    <span class="kw">if</span> (!email || !password) {
+      <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Atenção'</span>, <span class="str">'Preencha email e senha'</span>)
+      <span class="kw">return</span>
+    }
+    <span class="kw">try</span> {
+      <span class="fn">setLoading</span>(<span class="kw">true</span>)
+      <span class="kw">await</span> authService.<span class="fn">signIn</span>(email.<span class="fn">trim</span>(), password)
+      router.<span class="fn">replace</span>(<span class="str">'/(tabs)'</span>)
+    } <span class="kw">catch</span> (err: <span class="kw">any</span>) {
+      <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Erro'</span>, err.message)
+    } <span class="kw">finally</span> {
+      <span class="fn">setLoading</span>(<span class="kw">false</span>)
+    }
+  }
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">View</span> style={styles.container}&gt;
+      &lt;<span class="ty">Text</span> style={styles.title}&gt;InstaladorPro&lt;/<span class="ty">Text</span>&gt;
+      &lt;<span class="ty">Text</span> style={styles.subtitle}&gt;Faça login para continuar&lt;/<span class="ty">Text</span>&gt;
+
+      &lt;<span class="ty">TextInput</span>
+        style={styles.input}
+        placeholder=<span class="str">"Email"</span>
+        value={email}
+        onChangeText={setEmail}
+        keyboardType=<span class="str">"email-address"</span>
+        autoCapitalize=<span class="str">"none"</span>
+      /&gt;
+      &lt;<span class="ty">TextInput</span>
+        style={styles.input}
+        placeholder=<span class="str">"Senha"</span>
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      /&gt;
+
+      &lt;<span class="ty">TouchableOpacity</span>
+        style={[styles.btn, loading && styles.btnDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      &gt;
+        {loading
+          ? &lt;<span class="ty">ActivityIndicator</span> color=<span class="str">"#fff"</span> /&gt;
+          : &lt;<span class="ty">Text</span> style={styles.btnText}&gt;Entrar&lt;/<span class="ty">Text</span>&gt;}
+      &lt;/<span class="ty">TouchableOpacity</span>&gt;
+
+      &lt;<span class="ty">TouchableOpacity</span> onPress={() => router.<span class="fn">push</span>(<span class="str">'/(auth)/forgot-password'</span>)}&gt;
+        &lt;<span class="ty">Text</span> style={styles.link}&gt;Esqueci minha senha&lt;/<span class="ty">Text</span>&gt;
+      &lt;/<span class="ty">TouchableOpacity</span>&gt;
+
+      &lt;<span class="ty">TouchableOpacity</span> onPress={() => router.<span class="fn">push</span>(<span class="str">'/(auth)/register'</span>)}&gt;
+        &lt;<span class="ty">Text</span> style={styles.link}&gt;Criar conta&lt;/<span class="ty">Text</span>&gt;
+      &lt;/<span class="ty">TouchableOpacity</span>&gt;
+    &lt;/<span class="ty">View</span>&gt;
+  )
+}
+
+<span class="kw">const</span> styles = <span class="fn">StyleSheet</span>.<span class="fn">create</span>({
+  container: { flex: 1, padding: 24, justifyContent: <span class="str">'center'</span>, backgroundColor: <span class="str">'#fff'</span> },
+  title: { fontSize: 28, fontWeight: <span class="str">'700'</span>, color: <span class="str">'#1a1a2e'</span>, marginBottom: 6 },
+  subtitle: { fontSize: 14, color: <span class="str">'#666'</span>, marginBottom: 32 },
+  input: { borderWidth: 1, borderColor: <span class="str">'#e0e0e0'</span>, borderRadius: 10,
+    padding: 14, fontSize: 15, marginBottom: 12, backgroundColor: <span class="str">'#fafafa'</span> },
+  btn: { backgroundColor: <span class="str">'#534AB7'</span>, borderRadius: 10,
+    padding: 16, alignItems: <span class="str">'center'</span>, marginTop: 8 },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: <span class="str">'#fff'</span>, fontWeight: <span class="str">'600'</span>, fontSize: 15 },
+  link: { textAlign: <span class="str">'center'</span>, color: <span class="str">'#534AB7'</span>, marginTop: 16, fontSize: 14 },
+})`
+      },
+      {
+        name: 'register.tsx',
+        lang: 'tsx',
+        code: `<span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>
+<span class="kw">import</span> { View, Text, TextInput, TouchableOpacity,
+  StyleSheet, ActivityIndicator, Alert, ScrollView } <span class="kw">from</span> <span class="str">'react-native'</span>
+<span class="kw">import</span> { router } <span class="kw">from</span> <span class="str">'expo-router'</span>
+<span class="kw">import</span> { authService } <span class="kw">from</span> <span class="str">'../../src/services/auth.service'</span>
+
+<span class="kw">export default function</span> <span class="fn">RegisterScreen</span>() {
+  <span class="kw">const</span> [form, setForm] = <span class="fn">useState</span>({
+    nome: <span class="str">''</span>, email: <span class="str">''</span>, password: <span class="str">''</span>, confirmPassword: <span class="str">''</span>
+  })
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">false</span>)
+
+  <span class="kw">function</span> <span class="fn">update</span>(field: <span class="kw">keyof typeof</span> form, value: <span class="ty">string</span>) {
+    <span class="fn">setForm</span>(prev => ({ ...prev, [field]: value }))
+  }
+
+  <span class="kw">async function</span> <span class="fn">handleRegister</span>() {
+    <span class="kw">const</span> { nome, email, password, confirmPassword } = form
+    <span class="kw">if</span> (!nome || !email || !password) {
+      <span class="kw">return</span> <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Atenção'</span>, <span class="str">'Preencha todos os campos'</span>)
+    }
+    <span class="kw">if</span> (password !== confirmPassword) {
+      <span class="kw">return</span> <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Atenção'</span>, <span class="str">'As senhas não coincidem'</span>)
+    }
+    <span class="kw">if</span> (password.length < 6) {
+      <span class="kw">return</span> <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Atenção'</span>, <span class="str">'Senha mínima: 6 caracteres'</span>)
+    }
+    <span class="kw">try</span> {
+      <span class="fn">setLoading</span>(<span class="kw">true</span>)
+      <span class="kw">await</span> authService.<span class="fn">signUp</span>(email.<span class="fn">trim</span>(), password, nome.<span class="fn">trim</span>())
+      <span class="fn">Alert</span>.<span class="fn">alert</span>(
+        <span class="str">'Conta criada!'</span>,
+        <span class="str">'Verifique seu email para confirmar o cadastro.'</span>,
+        [{ text: <span class="str">'OK'</span>, onPress: () => router.<span class="fn">replace</span>(<span class="str">'/(auth)/login'</span>) }]
+      )
+    } <span class="kw">catch</span> (err: <span class="kw">any</span>) {
+      <span class="fn">Alert</span>.<span class="fn">alert</span>(<span class="str">'Erro'</span>, err.message)
+    } <span class="kw">finally</span> {
+      <span class="fn">setLoading</span>(<span class="kw">false</span>)
+    }
+  }
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">ScrollView</span> contentContainerStyle={styles.container}&gt;
+      &lt;<span class="ty">Text</span> style={styles.title}&gt;Criar conta&lt;/<span class="ty">Text</span>&gt;
+
+      {([<span class="str">'nome'</span>, <span class="str">'email'</span>, <span class="str">'password'</span>, <span class="str">'confirmPassword'</span>] <span class="kw">as const</span>).<span class="fn">map</span>(field => (
+        &lt;<span class="ty">TextInput</span>
+          key={field}
+          style={styles.input}
+          placeholder={{
+            nome: <span class="str">'Nome completo'</span>, email: <span class="str">'Email'</span>,
+            password: <span class="str">'Senha'</span>, confirmPassword: <span class="str">'Confirmar senha'</span>
+          }[field]}
+          value={form[field]}
+          onChangeText={v => <span class="fn">update</span>(field, v)}
+          secureTextEntry={field === <span class="str">'password'</span> || field === <span class="str">'confirmPassword'</span>}
+          keyboardType={field === <span class="str">'email'</span> ? <span class="str">'email-address'</span> : <span class="str">'default'</span>}
+          autoCapitalize={field === <span class="str">'nome'</span> ? <span class="str">'words'</span> : <span class="str">'none'</span>}
+        /&gt;
+      ))}
+
+      &lt;<span class="ty">TouchableOpacity</span>
+        style={[styles.btn, loading && styles.btnDisabled]}
+        onPress={handleRegister} disabled={loading}
+      &gt;
+        {loading
+          ? &lt;<span class="ty">ActivityIndicator</span> color=<span class="str">"#fff"</span>/&gt;
+          : &lt;<span class="ty">Text</span> style={styles.btnText}&gt;Criar conta&lt;/<span class="ty">Text</span>&gt;}
+      &lt;/<span class="ty">TouchableOpacity</span>&gt;
+
+      &lt;<span class="ty">TouchableOpacity</span> onPress={() => router.<span class="fn">back</span>()}&gt;
+        &lt;<span class="ty">Text</span> style={styles.link}&gt;Já tenho conta&lt;/<span class="ty">Text</span>&gt;
+      &lt;/<span class="ty">TouchableOpacity</span>&gt;
+    &lt;/<span class="ty">ScrollView</span>&gt;
+  )
+}
+
+<span class="kw">const</span> styles = <span class="fn">StyleSheet</span>.<span class="fn">create</span>({
+  container: { padding: 24, paddingTop: 60, backgroundColor: <span class="str">'#fff'</span> },
+  title: { fontSize: 26, fontWeight: <span class="str">'700'</span>, color: <span class="str">'#1a1a2e'</span>, marginBottom: 24 },
+  input: { borderWidth: 1, borderColor: <span class="str">'#e0e0e0'</span>, borderRadius: 10,
+    padding: 14, fontSize: 15, marginBottom: 12, backgroundColor: <span class="str">'#fafafa'</span> },
+  btn: { backgroundColor: <span class="str">'#534AB7'</span>, borderRadius: 10,
+    padding: 16, alignItems: <span class="str">'center'</span>, marginTop: 8 },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: <span class="str">'#fff'</span>, fontWeight: <span class="str">'600'</span>, fontSize: 15 },
+  link: { textAlign: <span class="str">'center'</span>, color: <span class="str">'#534AB7'</span>, marginTop: 16, fontSize: 14 },
+})`
+      }
+    ]
+  },
+  {
+    section: 'app',
+    color: '#993C1D',
+    items: [
+      {
+        name: '_layout.tsx (raiz)',
+        lang: 'tsx',
+        code: `<span class="kw">import</span> { useEffect } <span class="kw">from</span> <span class="str">'react'</span>
+<span class="kw">import</span> { Slot, router } <span class="kw">from</span> <span class="str">'expo-router'</span>
+<span class="kw">import</span> { QueryClient, QueryClientProvider } <span class="kw">from</span> <span class="str">'@tanstack/react-query'</span>
+<span class="kw">import</span> { useAuthStore } <span class="kw">from</span> <span class="str">'../src/store/auth.store'</span>
+<span class="kw">import</span> { authService } <span class="kw">from</span> <span class="str">'../src/services/auth.service'</span>
+
+<span class="kw">const</span> queryClient = <span class="kw">new</span> <span class="fn">QueryClient</span>()
+
+<span class="kw">export default function</span> <span class="fn">RootLayout</span>() {
+  <span class="kw">const</span> { setSession, isLoading } = <span class="fn">useAuthStore</span>()
+
+  <span class="fn">useEffect</span>(() => {
+    <span class="cm">// Carrega sessão existente na inicialização</span>
+    authService.<span class="fn">getSession</span>().<span class="fn">then</span>(({ data }) => {
+      <span class="fn">setSession</span>(data.session)
+      router.<span class="fn">replace</span>(data.session ? <span class="str">'/(tabs)'</span> : <span class="str">'/(auth)/login'</span>)
+    })
+
+    <span class="cm">// Ouve mudanças de autenticação em tempo real</span>
+    <span class="kw">const</span> { data: listener } = authService.<span class="fn">onAuthStateChange</span>(
+      (_event, session) => {
+        <span class="fn">setSession</span>(session)
+        <span class="kw">if</span> (!session) router.<span class="fn">replace</span>(<span class="str">'/(auth)/login'</span>)
+      }
+    )
+
+    <span class="kw">return</span> () => listener.subscription.<span class="fn">unsubscribe</span>()
+  }, [])
+
+  <span class="kw">if</span> (isLoading) <span class="kw">return null</span> <span class="cm">// Splash nativo cobre isso</span>
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">QueryClientProvider</span> client={queryClient}&gt;
+      &lt;<span class="ty">Slot</span> /&gt;
+    &lt;/<span class="ty">QueryClientProvider</span>&gt;
+  )
+}`
+      }
+    ]
+  }
+]
+
+const sidebar = document.getElementById('sidebar')
+const codeDisplay = document.getElementById('code-display')
+const topbarFilename = document.getElementById('topbar-filename')
+const copyBtn = document.getElementById('copy-btn')
+let activeItem = null
+
+files.forEach(section => {
+  const secDiv = document.createElement('div')
+  secDiv.className = 'sidebar-section'
+  const label = document.createElement('div')
+  label.className = 'sidebar-label'
+  label.textContent = section.section
+  secDiv.appendChild(label)
+
+  section.items.forEach(item => {
+    const el = document.createElement('div')
+    el.className = 'file-item'
+    el.innerHTML = `<span class="file-dot" style="background:${section.color}"></span>${item.name}`
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.file-item').forEach(f => f.classList.remove('active'))
+      el.classList.add('active')
+      codeDisplay.innerHTML = item.code
+      topbarFilename.textContent = item.name
+      activeItem = item
+    })
+    secDiv.appendChild(el)
+  })
+  sidebar.appendChild(secDiv)
+})
+
+copyBtn.addEventListener('click', () => {
+  if (!activeItem) return
+  const text = codeDisplay.innerText
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.textContent = 'Copiado!'
+    setTimeout(() => copyBtn.textContent = 'Copiar', 2000)
+  })
+})
+
+// Seleciona o primeiro arquivo automaticamente
+sidebar.querySelector('.file-item')?.click()
+</script>

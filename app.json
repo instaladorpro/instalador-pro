@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "InstaladorPro",
+    "slug": "instalador-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "instaladorpro",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#534AB7",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.seuusuario.instaladorpro",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Necessário para fotografar instalações",
+        "NSPhotoLibraryUsageDescription": "Necessário para selecionar fotos das instalações"
+      }
+    },
+    "android": {
+      "package": "com.seuusuario.instaladorpro",
+      "adaptiveIcon": {
+        "backgroundColor": "#534AB7"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#534AB7"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Necessário para selecionar fotos das instalações"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
