@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
 const NAV_ICONS: Record<string, string> = {
@@ -30,7 +31,16 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const orgName = useAuthStore((s) => s.currentOrg?.nome);
+  const orgs = useAuthStore((s) => s.organizations);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  useEffect(() => {
+    if (!isLoading && orgs.length === 0) {
+      router.push('/create-org');
+    }
+  }, [isLoading, orgs, router]);
 
   function isActive(href: string) {
     if (href === '/inicio') return pathname === '/inicio';

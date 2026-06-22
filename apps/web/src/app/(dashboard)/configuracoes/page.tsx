@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { createClient } from '@/lib/supabase/client';
 import { PageHeader, Button, Input, Card, Badge, Modal, Select } from '@/components/ui';
@@ -102,6 +103,15 @@ export default function ConfiguracoesPage() {
               {msg && <span className="text-xs text-emerald-600">{msg}</span>}
             </div>
           )}
+        </Card>
+
+        <Card header={{ title: 'Modelos de Checklist' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-secondary">Gerencie os modelos de checklist usados nas instalações.</p>
+            </div>
+            <Link href="/configuracoes/checklists"><Button variant="outline" size="sm">Gerenciar Modelos</Button></Link>
+          </div>
         </Card>
 
         <Card header={{ title: 'Plano Atual' }}>

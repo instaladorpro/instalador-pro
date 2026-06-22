@@ -49,7 +49,8 @@ export default function CreateOrgPage() {
       .single()
 
     if (orgError || !org) {
-      setError('Erro ao criar empresa. Tente novamente.')
+      console.error('Org create error:', orgError)
+      setError(`Erro: ${orgError?.message || 'Desconhecido'} (${orgError?.code || ''})`)
       return
     }
 

@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useInstalacao, useUpdateStatus, useDeleteInstalacao, useHistoricoStatus } from '@/hooks/use-instalacoes';
-import { useChecklists, useCreateChecklist, useToggleItem } from '@/hooks/use-checklists';
+import { useChecklists, useToggleItem } from '@/hooks/use-checklists';
+import { useChecklistTemplates, useApplyTemplate } from '@/hooks/use-checklist-templates';
 import { useFotos, useUploadFoto, useDeleteFoto } from '@/hooks/use-fotos';
 import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select } from '@/components/ui';
 import * as fotosService from '@/services/fotos.service';
@@ -40,13 +41,14 @@ export default function InstalacaoDetailPage() {
   const updateStatus = useUpdateStatus();
   const deleteInstalacao = useDeleteInstalacao();
   const toggleItem = useToggleItem();
-  const createChecklist = useCreateChecklist();
+  const { data: templates } = useChecklistTemplates();
+  const applyTemplate = useApplyTemplate();
   const uploadFoto = useUploadFoto();
   const deleteFoto = useDeleteFoto();
 
   const [showDelete, setShowDelete] = useState(false);
   const [showAddChecklist, setShowAddChecklist] = useState(false);
-  const [checklistName, setChecklistName] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [fotoCategoria, setFotoCategoria] = useState('durante');
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
@@ -67,25 +69,12 @@ export default function InstalacaoDetailPage() {
     catch (err) { alert(err instanceof Error ? err.message : 'Erro ao excluir'); }
   }
 
-  async function handleCreateChecklist() {
-    if (!checklistName.trim()) return;
+  async function handleApplyTemplate() {
+    if (!selectedTemplateId) return;
     try {
-      await createChecklist.mutateAsync({
-        instalacaoId: id, nome: checklistName,
-        items: [
-          { descricao: 'Verificar local de instalação', obrigatorio: true },
-          { descricao: 'Conferir equipamentos', obrigatorio: true },
-          { descricao: 'Instalar estrutura', obrigatorio: true },
-          { descricao: 'Instalar painéis', obrigatorio: true },
-          { descricao: 'Instalar inversor', obrigatorio: true },
-          { descricao: 'Conexão elétrica', obrigatorio: true },
-          { descricao: 'Teste de funcionamento', obrigatorio: true },
-          { descricao: 'Limpeza do local', obrigatorio: false },
-          { descricao: 'Fotos finais', obrigatorio: false },
-        ],
-      });
-      setShowAddChecklist(false); setChecklistName('');
-    } catch (err) { alert(err instanceof Error ? err.message : 'Erro'); }
+      await applyTemplate.mutateAsync({ templateId: selectedTemplateId, instalacaoId: id });
+      setShowAddChecklist(false); setSelectedTemplateId('');
+    } catch (err) { alert(err instanceof Error ? err.message : 'Erro ao aplicar checklist'); }
   }
 
   async function handleUploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -253,11 +242,45 @@ export default function InstalacaoDetailPage() {
         <p className="text-sm text-secondary">A instalação <strong>{inst.tipo_servico}</strong> será excluída permanentemente.</p>
       </Modal>
 
-      <Modal open={showAddChecklist} onClose={() => setShowAddChecklist(false)} title="Novo Checklist" size="sm" footer={
-        <><Button variant="outline" onClick={() => setShowAddChecklist(false)}>Cancelar</Button><Button loading={createChecklist.isPending} onClick={handleCreateChecklist}>Criar</Button></>
+      <Modal open={showAddChecklist} onClose={() => setShowAddChecklist(false)} title="Aplicar Checklist" size="sm" footer={
+        <><Button variant="outline" onClick={() => setShowAddChecklist(false)}>Cancelar</Button><Button loading={applyTemplate.isPending} onClick={handleApplyTemplate} disabled={!selectedTemplateId}>Aplicar</Button></>
       }>
-        <Input label="Nome do checklist" value={checklistName} onChange={(e) => setChecklistName(e.target.value)} placeholder="Ex: Checklist de instalação" />
-        <p className="text-xs text-muted mt-2">Será criado com 9 itens padrão para instalação solar. Você pode personalizar depois.</p>
+        {!templates?.length ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted mb-2">Nenhum modelo de checklist criado.</p>
+            <a href="/configuracoes/checklists" className="text-sm text-primary hover:underline">Criar modelo em Configurações →</a>
+          </div>
+        ) : (
+          <>
+            <Select
+              label="Modelo de Checklist"
+              options={templates.map((t: Record<string, unknown>) => ({ value: t.id as string, label: `${t.nome} (${((t.checklist_template_items as unknown[]) || []).length} itens)` }))}
+              placeholder="Selecione um modelo..."
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+            />
+            {selectedTemplateId && (() => {
+              const selected = templates.find((t: Record<string, unknown>) => t.id === selectedTemplateId);
+              if (!selected) return null;
+              const items = (selected.checklist_template_items as Record<string, unknown>[]) || [];
+              return (
+                <div className="mt-3 p-3 bg-surface rounded-lg max-h-48 overflow-y-auto">
+                  <p className="text-xs font-medium text-secondary mb-2">Itens que serão criados:</p>
+                  <ul className="space-y-1">
+                    {items.map((item, i) => (
+                      <li key={i} className="text-xs text-foreground flex gap-1.5">
+                        <span className="text-muted">○</span>
+                        {item.descricao as string}
+                        {item.obrigatorio && <span className="text-danger">*</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+            <p className="text-xs text-muted mt-2">Uma cópia independente será criada para esta instalação.</p>
+          </>
+        )}
       </Modal>
     </div>
   );
