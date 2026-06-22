@@ -19,17 +19,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
-          className={`w-full h-10 px-3 rounded-lg border bg-white text-foreground text-sm placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:bg-surface ${error ? 'border-danger ring-1 ring-danger' : 'border-border'} ${className}`}
+          className={`w-full h-10 px-3.5 rounded-xl border bg-white text-foreground text-sm placeholder:text-muted transition-all duration-150 focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 disabled:bg-surface ${error ? 'border-danger ring-1 ring-danger/20' : 'border-border hover:border-secondary/40'} ${className}`}
           aria-invalid={!!error}
           aria-describedby={error ? `${inputId}-error` : undefined}
           {...props}
         />
-        {error && (
-          <p id={`${inputId}-error`} className="text-xs text-danger">{error}</p>
-        )}
-        {helperText && !error && (
-          <p className="text-xs text-muted">{helperText}</p>
-        )}
+        {error && <p id={`${inputId}-error`} className="text-xs text-danger">{error}</p>}
+        {helperText && !error && <p className="text-xs text-muted">{helperText}</p>}
       </div>
     );
   }

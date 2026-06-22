@@ -21,21 +21,21 @@ interface DataTableProps<T> {
 function DataTable<T>({ columns, data, loading, emptyMessage = 'Nenhum registro encontrado', onRowClick, keyExtractor }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div className="border border-border rounded-xl overflow-hidden">
+      <div className="bg-white border border-border rounded-2xl overflow-hidden shadow-card">
         <table className="w-full">
-          <thead className="bg-surface">
-            <tr>
+          <thead>
+            <tr className="border-b border-border bg-surface/50">
               {columns.map((col) => (
-                <th key={col.key} className="text-left text-xs font-medium text-secondary px-4 py-3">{col.header}</th>
+                <th key={col.key} className="text-left text-[11px] font-semibold text-muted uppercase tracking-wider px-5 py-3">{col.header}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i} className="border-t border-border">
+              <tr key={i} className="border-b border-border last:border-0">
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3">
-                    <div className="h-4 bg-surface rounded animate-pulse" />
+                  <td key={col.key} className="px-5 py-3.5">
+                    <div className="h-4 bg-surface rounded-lg animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
                   </td>
                 ))}
               </tr>
@@ -48,19 +48,19 @@ function DataTable<T>({ columns, data, loading, emptyMessage = 'Nenhum registro 
 
   if (data.length === 0) {
     return (
-      <div className="border border-border rounded-xl p-8 text-center">
+      <div className="bg-white border border-border rounded-2xl p-10 text-center shadow-card">
         <p className="text-sm text-muted">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-border rounded-xl overflow-x-auto">
+    <div className="bg-white border border-border rounded-2xl overflow-x-auto shadow-card">
       <table className="w-full">
-        <thead className="bg-surface">
-          <tr>
+        <thead>
+          <tr className="border-b border-border bg-surface/50">
             {columns.map((col) => (
-              <th key={col.key} className={`text-left text-xs font-medium text-secondary px-4 py-3 ${col.className || ''}`}>{col.header}</th>
+              <th key={col.key} className={`text-left text-[11px] font-semibold text-muted uppercase tracking-wider px-5 py-3 ${col.className || ''}`}>{col.header}</th>
             ))}
           </tr>
         </thead>
@@ -69,10 +69,10 @@ function DataTable<T>({ columns, data, loading, emptyMessage = 'Nenhum registro 
             <tr
               key={keyExtractor(item)}
               onClick={() => onRowClick?.(item)}
-              className={`border-t border-border transition-colors ${onRowClick ? 'cursor-pointer hover:bg-surface/50' : ''}`}
+              className={`border-b border-border last:border-0 transition-colors duration-100 ${onRowClick ? 'cursor-pointer hover:bg-primary/[0.02] active:bg-primary/[0.04]' : ''}`}
             >
               {columns.map((col) => (
-                <td key={col.key} className={`px-4 py-3 text-sm text-foreground ${col.className || ''}`}>
+                <td key={col.key} className={`px-5 py-3.5 text-sm text-foreground ${col.className || ''}`}>
                   {col.render ? col.render(item) : (item as Record<string, unknown>)[col.key] as ReactNode}
                 </td>
               ))}

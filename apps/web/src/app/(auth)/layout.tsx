@@ -1,14 +1,13 @@
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import Image from 'next/image';
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
+      <div className="w-full max-w-md animate-slide-up">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-primary">Instalador Pro</h1>
-          <p className="mt-1 text-sm text-gray-500">Energia solar</p>
+          <Image src="/logo.png" alt="Instalador Pro" width={64} height={64} className="mx-auto mb-3" />
+          <h1 className="text-xl font-bold text-foreground">Instalador Pro</h1>
+          <p className="mt-0.5 text-sm text-muted">Plataforma para instaladores de energia solar</p>
         </div>
         {children}
       </div>

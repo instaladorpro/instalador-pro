@@ -6,17 +6,17 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   padding?: 'sm' | 'md' | 'lg';
 }
 
-const paddingClasses = { sm: 'p-3', md: 'p-4', lg: 'p-6' };
+const paddingClasses = { sm: 'p-3', md: 'p-5', lg: 'p-6' };
 
 function Card({ variant = 'default', header, padding = 'md', className = '', children, ...props }: CardProps) {
   const base = variant === 'default'
-    ? 'bg-white border border-border rounded-xl shadow-sm'
-    : 'bg-surface rounded-xl';
+    ? 'bg-white border border-border rounded-2xl shadow-card'
+    : 'bg-surface rounded-2xl';
 
   return (
-    <div className={`${base} ${className}`} {...props}>
+    <div className={`${base} transition-shadow duration-200 ${className}`} {...props}>
       {header && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">{header.title}</h3>
           {header.action}
         </div>
