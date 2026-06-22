@@ -105,6 +105,15 @@ export default function ConfiguracoesPage() {
           )}
         </Card>
 
+        <Card header={{ title: 'Tipos de Instalação' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-secondary">Defina os tipos de serviço que sua empresa realiza (Residencial, Comercial, etc.).</p>
+            </div>
+            <Link href="/configuracoes/tipos-instalacao"><Button variant="outline" size="sm">Gerenciar Tipos</Button></Link>
+          </div>
+        </Card>
+
         <Card header={{ title: 'Modelos de Checklist' }}>
           <div className="flex items-center justify-between">
             <div>
