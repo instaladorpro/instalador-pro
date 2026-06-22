@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useInstalacao, useUpdateStatus, useDeleteInstalacao, useHistoricoStatus } from '@/hooks/use-instalacoes';
-import { useChecklists, useToggleItem } from '@/hooks/use-checklists';
+import { useChecklists, useToggleItem, useDeleteChecklist } from '@/hooks/use-checklists';
 import { useChecklistTemplates, useApplyTemplate } from '@/hooks/use-checklist-templates';
 import { useFotos, useUploadFoto, useDeleteFoto } from '@/hooks/use-fotos';
 import { PageHeader, Button, Card, StatusBadge, Modal, Loading, Input, Select } from '@/components/ui';
@@ -41,6 +41,7 @@ export default function InstalacaoDetailPage() {
   const updateStatus = useUpdateStatus();
   const deleteInstalacao = useDeleteInstalacao();
   const toggleItem = useToggleItem();
+  const deleteChecklist = useDeleteChecklist();
   const { data: templates } = useChecklistTemplates();
   const applyTemplate = useApplyTemplate();
   const uploadFoto = useUploadFoto();
@@ -138,7 +139,14 @@ export default function InstalacaoDetailPage() {
                     <div key={cl.id as string}>
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium text-foreground">{cl.nome as string}</h4>
-                        <span className="text-xs text-muted">{done}/{items.length}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted">{done}/{items.length}</span>
+                          <button
+                            onClick={() => { if (confirm('Excluir este checklist?')) deleteChecklist.mutate(cl.id as string); }}
+                            className="text-muted hover:text-danger text-sm p-0.5"
+                            title="Excluir checklist"
+                          >×</button>
+                        </div>
                       </div>
                       <div className="h-1.5 bg-surface rounded-full mb-2 overflow-hidden">
                         <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${items.length ? (done / items.length) * 100 : 0}%` }} />
