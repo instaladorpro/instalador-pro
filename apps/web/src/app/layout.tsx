@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/providers/auth-provider'
 import { QueryProvider } from '@/providers/query-provider'
+import { ConsentBanner } from '@/components/consent-banner'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body className="font-sans">
-        <QueryProvider><AuthProvider>{children}</AuthProvider></QueryProvider>
+        <QueryProvider><AuthProvider>{children}<ConsentBanner /></AuthProvider></QueryProvider>
       </body>
     </html>
   )
