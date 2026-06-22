@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
 const NAV_ICONS: Record<string, string> = {
-  '/': '📊',
+  '/inicio': '📊',
   '/instalacoes': '⚡',
   '/clientes': '👥',
   '/equipes': '👷',
@@ -17,7 +17,7 @@ const NAV_ICONS: Record<string, string> = {
 };
 
 const navItems = [
-  { href: '/', label: 'Início' },
+  { href: '/inicio', label: 'Início' },
   { href: '/instalacoes', label: 'Instalações' },
   { href: '/clientes', label: 'Clientes' },
   { href: '/equipes', label: 'Equipes' },
@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const orgName = useAuthStore((s) => s.currentOrg?.nome);
 
   function isActive(href: string) {
-    if (href === '/') return pathname === '/';
+    if (href === '/inicio') return pathname === '/inicio';
     return pathname.startsWith(href);
   }
 

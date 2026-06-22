@@ -69,7 +69,7 @@ export default function CreateOrgPage() {
     }
 
     setOrg(org as Organization, member as OrgMember)
-    router.push('/dashboard')
+    router.push('/inicio')
     router.refresh()
   }
 

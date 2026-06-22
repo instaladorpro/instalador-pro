@@ -31,25 +31,20 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback']
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/termos', '/privacidade']
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + '/')
   )
   const isAuthRoute = ['/login', '/register', '/forgot-password'].includes(pathname)
-  const isDashboardRoute = pathname.startsWith('/dashboard')
 
-  if (isDashboardRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
+  // Authenticated user trying to access auth pages → redirect to home
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/inicio'
     return NextResponse.redirect(url)
   }
 
+  // Unauthenticated user trying to access protected pages → redirect to login
   if (!isPublicRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'

@@ -52,7 +52,7 @@ export default function SelectOrgPage() {
         const org = members[0].organizations as Organization
         const { organizations: _o, ...memberData } = members[0]
         setOrg(org, memberData as unknown as OrgMember)
-        router.push('/dashboard')
+        router.push('/inicio')
         return
       }
 
@@ -73,7 +73,7 @@ export default function SelectOrgPage() {
 
   function handleSelect(item: OrgWithMember) {
     setOrg(item.org, item.member)
-    router.push('/dashboard')
+    router.push('/inicio')
     router.refresh()
   }
 

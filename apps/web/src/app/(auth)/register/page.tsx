@@ -32,10 +32,11 @@ export default function RegisterPage() {
     })
 
     if (authError) {
+      console.error('Supabase auth error:', authError)
       if (authError.message.includes('already registered')) {
         setError('Este email ja esta cadastrado.')
       } else {
-        setError('Erro ao criar conta. Tente novamente.')
+        setError(`Erro: ${authError.message}`)
       }
       return
     }
