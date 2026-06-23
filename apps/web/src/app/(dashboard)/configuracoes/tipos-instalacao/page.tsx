@@ -102,7 +102,7 @@ export default function TiposInstalacaoPage() {
                       <h3 className="text-sm font-medium text-foreground">{t.nome as string}</h3>
                       {!(t.ativo as boolean) && <Badge variant="default" size="sm">Inativo</Badge>}
                     </div>
-                    {t.descricao && <p className="text-xs text-muted mt-0.5">{t.descricao as string}</p>}
+                    {t.descricao ? <p className="text-xs text-muted mt-0.5">{String(t.descricao)}</p> : null}
                     <div className="flex gap-3 mt-1">
                       {checklistT && <span className="text-[10px] text-secondary">✅ {checklistT.nome as string}</span>}
                       {materialT && <span className="text-[10px] text-secondary">📦 {materialT.nome as string}</span>}

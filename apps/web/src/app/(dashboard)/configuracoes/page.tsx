@@ -164,7 +164,7 @@ export default function ConfiguracoesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={ROLE_VARIANT[m.role as string] || 'default'} size="sm">{ROLE_LABELS[m.role as string] || m.role}</Badge>
+                    <Badge variant={ROLE_VARIANT[m.role as string] || 'default'} size="sm">{ROLE_LABELS[m.role as string] || String(m.role)}</Badge>
                     {isAdmin && m.role !== 'owner' && (
                       <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(m.id as string)}>×</Button>
                     )}

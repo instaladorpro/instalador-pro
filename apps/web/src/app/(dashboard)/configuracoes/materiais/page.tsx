@@ -96,7 +96,7 @@ export default function MaterialTemplatesPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">{t.nome as string}</h3>
-                    {t.descricao && <p className="text-xs text-muted mt-0.5">{t.descricao as string}</p>}
+                    {t.descricao ? <p className="text-xs text-muted mt-0.5">{String(t.descricao)}</p> : null}
                   </div>
                   <span className="text-xs text-muted bg-surface px-2 py-0.5 rounded-full">{items.length} itens</span>
                 </div>

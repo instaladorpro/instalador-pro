@@ -124,7 +124,7 @@ export default function ChecklistTemplatesPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">{t.nome as string}</h3>
-                    {t.descricao && <p className="text-xs text-muted mt-0.5">{t.descricao as string}</p>}
+                    {t.descricao ? <p className="text-xs text-muted mt-0.5">{String(t.descricao)}</p> : null}
                   </div>
                   <span className="text-xs text-muted bg-surface px-2 py-0.5 rounded-full">{items.length} itens</span>
                 </div>
@@ -133,7 +133,7 @@ export default function ChecklistTemplatesPage() {
                   {items.slice(0, 8).map((item, i) => (
                     <li key={i} className="text-xs text-secondary flex items-start gap-1.5">
                       <span className="text-muted mt-0.5">○</span>
-                      <span>{item.descricao as string}{item.obrigatorio && <span className="text-danger ml-0.5">*</span>}</span>
+                      <span>{String(item.descricao)}{item.obrigatorio ? <span className="text-danger ml-0.5">*</span> : null}</span>
                     </li>
                   ))}
                   {items.length > 8 && <li className="text-xs text-muted">+{items.length - 8} mais...</li>}

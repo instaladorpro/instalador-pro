@@ -309,7 +309,7 @@ export default function InstalacaoDetailPage() {
                               className="w-4 h-4 rounded border-border text-primary focus:ring-primary" />
                             <span className={`text-sm ${item.concluido ? 'line-through text-muted' : 'text-foreground'}`}>
                               {item.descricao as string}
-                              {item.obrigatorio && <span className="text-danger text-xs ml-1">*</span>}
+                              {item.obrigatorio ? <span className="text-danger text-xs ml-1">*</span> : null}
                             </span>
                           </label>
                         ))}
@@ -474,12 +474,12 @@ export default function InstalacaoDetailPage() {
                     </div>
                     <div className="pb-3">
                       <div className="flex items-center gap-2">
-                        {h.status_anterior && <StatusBadge status={h.status_anterior as string} size="sm" />}
-                        {h.status_anterior && <span className="text-muted text-xs">→</span>}
+                        {h.status_anterior ? <StatusBadge status={h.status_anterior as string} size="sm" /> : null}
+                        {h.status_anterior ? <span className="text-muted text-xs">→</span> : null}
                         <StatusBadge status={h.status_novo as string} size="sm" />
                       </div>
                       <p className="text-[10px] text-muted mt-1">{formatDate(h.created_at as string)}</p>
-                      {h.observacao && <p className="text-xs text-secondary mt-0.5">{h.observacao as string}</p>}
+                      {h.observacao ? <p className="text-xs text-secondary mt-0.5">{String(h.observacao)}</p> : null}
                     </div>
                   </div>
                 ))}
@@ -525,7 +525,7 @@ export default function InstalacaoDetailPage() {
                       <li key={i} className="text-xs text-foreground flex gap-1.5">
                         <span className="text-muted">○</span>
                         {item.descricao as string}
-                        {item.obrigatorio && <span className="text-danger">*</span>}
+                        {item.obrigatorio ? <span className="text-danger">*</span> : null}
                       </li>
                     ))}
                   </ul>
