@@ -52,7 +52,8 @@ export default function FinanceiroPage() {
       setShowModal(false);
       setSelectedInst(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao registrar pagamento');
+      console.error('Payment error:', err);
+      alert(err instanceof Error ? err.message : JSON.stringify(err));
     }
   }
 
