@@ -28,13 +28,14 @@ export default function FinanceiroPage() {
   const [formData, setFormData] = useState({ valor: '', forma_pagamento: 'pix', data_recebimento: new Date().toISOString().split('T')[0], observacoes: '' });
 
   const totalRecebido = (resumo || []).reduce((s, m) => s + m.total, 0);
-  const totalPendente = (pendencias || []).reduce((s, p) => s + Number((p as Record<string, unknown>).valor_total || 0), 0);
+  const totalPendente = (pendencias || []).reduce((s, p) => s + Number((p as Record<string, unknown>).saldoPendente ?? (p as Record<string, unknown>).valor_total ?? 0), 0);
   const mediaMensal = resumo?.length ? totalRecebido / resumo.length : 0;
   const maxMes = Math.max(...(resumo || []).map((m) => m.total), 1);
 
   function openPayment(inst: Record<string, unknown>) {
     setSelectedInst(inst);
-    setFormData({ valor: String(inst.valor_total || ''), forma_pagamento: 'pix', data_recebimento: new Date().toISOString().split('T')[0], observacoes: '' });
+    const saldo = Number(inst.saldoPendente) || Number(inst.valor_total) || 0;
+    setFormData({ valor: String(saldo), forma_pagamento: 'pix', data_recebimento: new Date().toISOString().split('T')[0], observacoes: '' });
     setShowModal(true);
   }
 
@@ -103,17 +104,31 @@ export default function FinanceiroPage() {
             <p className="text-sm text-muted py-4 text-center">Nenhuma pendência</p>
           ) : (
             <div className="divide-y divide-border">
-              {pendencias.map((p: Record<string, unknown>) => (
+              {pendencias.map((p: Record<string, unknown>) => {
+                const totalRec = Number(p.totalRecebido) || 0;
+                const saldo = Number(p.saldoPendente) ?? (Number(p.valor_total) || 0);
+                const valorTotal = Number(p.valor_total) || 0;
+                return (
                 <div key={p.id as string} className="flex items-center justify-between py-2.5">
                   <div>
                     <p className="text-sm font-medium text-foreground">{p.tipo_servico as string}</p>
                     <p className="text-xs text-muted">{((p.clientes as Record<string, unknown>)?.nome as string) || 'Sem cliente'}</p>
+                    {totalRec > 0 && (
+                      <p className="text-[10px] text-emerald-600 mt-0.5">
+                        Recebido: {formatCurrency(totalRec)} de {formatCurrency(valorTotal)}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">{formatCurrency(Number(p.valor_total) || 0)}</span>
+                    <div className="text-right">
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(saldo)}</span>
+                      {totalRec > 0 && <p className="text-[10px] text-muted">restante</p>}
+                    </div>
                     <Button size="sm" variant="outline" onClick={() => openPayment(p)}>Receber</Button>
                   </div>
                 </div>
+                );
+              }
               ))}
             </div>
           )}
@@ -127,7 +142,19 @@ export default function FinanceiroPage() {
         </>
       }>
         <div className="space-y-4">
-          <Input label="Valor (R$)" type="number" step="0.01" value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} />
+          {selectedInst && (() => {
+            const valorTotal = Number(selectedInst.valor_total) || 0;
+            const jaRecebido = Number(selectedInst.totalRecebido) || 0;
+            const saldo = Number(selectedInst.saldoPendente) ?? valorTotal;
+            return (
+              <div className="bg-surface rounded-lg p-3 space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-muted">Valor total</span><span className="text-foreground">{formatCurrency(valorTotal)}</span></div>
+                {jaRecebido > 0 && <div className="flex justify-between"><span className="text-muted">Já recebido</span><span className="text-emerald-600">{formatCurrency(jaRecebido)}</span></div>}
+                <div className="flex justify-between font-medium border-t border-border pt-1"><span className="text-foreground">Saldo pendente</span><span className="text-foreground">{formatCurrency(saldo)}</span></div>
+              </div>
+            );
+          })()}
+          <Input label="Valor deste recebimento (R$)" type="number" step="0.01" value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} helperText="Informe o valor parcial ou total a receber" />
           <Select label="Forma de Pagamento" options={FORMAS} value={formData.forma_pagamento} onChange={(e) => setFormData({ ...formData, forma_pagamento: e.target.value })} />
           <Input label="Data do Recebimento" type="date" value={formData.data_recebimento} onChange={(e) => setFormData({ ...formData, data_recebimento: e.target.value })} />
           <Textarea label="Observações" value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
